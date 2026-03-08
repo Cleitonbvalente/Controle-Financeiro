@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+<meta charset="UTF-8">
+<title>Controle Financeiro Freelancer</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+<header>
+<h1>💻 Controle Financeiro Freelancer</h1>
+</header>
+
+<main class="dashboard">
+
+<!-- SALDO -->
+<section class="card saldo-card">
+<h2>Saldo do Mês</h2>
+<h1 id="saldo">R$ 0</h1>
+</section>
+
+<!-- FILTRO -->
+<section class="card filtro-card">
+
+<h2>Filtrar por mês</h2>
+
+<input type="month" id="filtroMes">
+
+<button onclick="filtrarMes()">Aplicar Filtro</button>
+
+</section>
+
+
+<!-- RECEITA -->
+<section class="card">
+
+<h2>Adicionar Receita</h2>
+
+<input type="text" id="tituloReceita" placeholder="Título da Receita">
+<input type="number" id="valorReceita" placeholder="Valor">
+<input type="date" id="dataReceita">
+
+<button onclick="adicionarReceita()">Adicionar Receita</button>
+
+</section>
+
+
+<!-- DESPESA -->
+<section class="card">
+
+<h2>Adicionar Despesa</h2>
+
+<input type="text" id="tituloDespesa" placeholder="Título da Despesa">
+
+<input type="number" id="valorDespesa" placeholder="Valor">
+
+<select id="categoriaDespesa">
+
+<option value="">Selecione a categoria</option>
+
+<optgroup label="🏠 Despesas Essenciais">
+<option value="Moradia">Moradia</option>
+<option value="Alimentação">Alimentação</option>
+<option value="Transporte">Transporte</option>
+<option value="Internet">Internet</option>
+</optgroup>
+
+<optgroup label="💻 Trabalho">
+<option value="Ferramentas">Ferramentas</option>
+<option value="Software">Software</option>
+<option value="Equipamentos">Equipamentos</option>
+</optgroup>
+
+<optgroup label="🎯 Pessoal">
+<option value="Lazer">Lazer</option>
+<option value="Saúde">Saúde</option>
+<option value="Outros">Outros</option>
+</optgroup>
+
+</select>
+
+<input type="date" id="dataDespesa">
+
+<button onclick="adicionarDespesa()">Adicionar Despesa</button>
+
+</section>
+
+
+<!-- LISTAS -->
+<section class="card lista-card">
+
+<h2>Receitas</h2>
+<ul id="listaReceitas"></ul>
+
+<h2>Despesas</h2>
+<ul id="listaDespesas"></ul>
+
+</section>
+
+</main>
+
+<script type="module" src="js/app.js"></script>
+
+</body>
+</html>
