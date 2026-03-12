@@ -1,12 +1,8 @@
-export class Receita {
-
+export class Receita{
 constructor(titulo, valor, data){
-
 this.id = Date.now()
 this.titulo = titulo
-this.valor = valor
+this.valor = Number(valor)
 this.data = data
-
 }
-
 }
