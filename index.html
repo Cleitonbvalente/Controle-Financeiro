@@ -3,103 +3,83 @@
 
 <head>
 <meta charset="UTF-8">
-<title>Controle Financeiro Freelancer</title>
+<title>Controle Financeiro</title>
+
 <link rel="stylesheet" href="css/style.css">
+
 </head>
 
 <body>
 
-<header>
-<h1>💻 Controle Financeiro Freelancer</h1>
-</header>
+<h1>Controle Financeiro</h1>
 
-<main class="dashboard">
+<section class="saldo">
 
-<!-- SALDO -->
-<section class="card saldo-card">
-<h2>Saldo do Mês</h2>
-<h1 id="saldo">R$ 0</h1>
-</section>
-
-<!-- FILTRO -->
-<section class="card filtro-card">
-
-<h2>Filtrar por mês</h2>
-
-<input type="month" id="filtroMes">
-
-<button onclick="filtrarMes()">Aplicar Filtro</button>
+<h2 id="saldo">Saldo: R$ 0</h2>
 
 </section>
 
+<section class="forms">
 
-<!-- RECEITA -->
-<section class="card">
+<div class="card">
 
-<h2>Adicionar Receita</h2>
+<h3>Adicionar Receita</h3>
 
-<input type="text" id="tituloReceita" placeholder="Título da Receita">
-<input type="number" id="valorReceita" placeholder="Valor">
-<input type="date" id="dataReceita">
+<input id="tituloReceita" placeholder="Título">
 
-<button onclick="adicionarReceita()">Adicionar Receita</button>
+<input id="valorReceita" type="number" placeholder="Valor">
 
-</section>
+<input id="dataReceita" type="date">
 
+<button id="btnReceita">Adicionar Receita</button>
 
-<!-- DESPESA -->
-<section class="card">
+</div>
 
-<h2>Adicionar Despesa</h2>
+<div class="card">
 
-<input type="text" id="tituloDespesa" placeholder="Título da Despesa">
+<h3>Adicionar Despesa</h3>
 
-<input type="number" id="valorDespesa" placeholder="Valor">
+<input id="tituloDespesa" placeholder="Título">
 
-<select id="categoriaDespesa">
+<input id="valorDespesa" type="number" placeholder="Valor">
 
-<option value="">Selecione a categoria</option>
+<input id="categoriaDespesa" placeholder="Categoria">
 
-<optgroup label="🏠 Despesas Essenciais">
-<option value="Moradia">Moradia</option>
-<option value="Alimentação">Alimentação</option>
-<option value="Transporte">Transporte</option>
-<option value="Internet">Internet</option>
-</optgroup>
+<input id="dataDespesa" type="date">
 
-<optgroup label="💻 Trabalho">
-<option value="Ferramentas">Ferramentas</option>
-<option value="Software">Software</option>
-<option value="Equipamentos">Equipamentos</option>
-</optgroup>
+<button id="btnDespesa">Adicionar Despesa</button>
 
-<optgroup label="🎯 Pessoal">
-<option value="Lazer">Lazer</option>
-<option value="Saúde">Saúde</option>
-<option value="Outros">Outros</option>
-</optgroup>
-
-</select>
-
-<input type="date" id="dataDespesa">
-
-<button onclick="adicionarDespesa()">Adicionar Despesa</button>
+</div>
 
 </section>
 
+<section>
 
-<!-- LISTAS -->
-<section class="card lista-card">
+<h3>Filtrar por mês</h3>
+
+<input type="month" id="mesFiltro">
+
+</section>
+
+<section class="listas">
+
+<div>
 
 <h2>Receitas</h2>
+
 <ul id="listaReceitas"></ul>
 
+</div>
+
+<div>
+
 <h2>Despesas</h2>
+
 <ul id="listaDespesas"></ul>
 
-</section>
+</div>
 
-</main>
+</section>
 
 <script type="module" src="js/app.js"></script>
 
