@@ -1,29 +1,34 @@
-export function salvarDados(chave, dados){
+export function salvarDados(receitas, despesas){
 
 try{
 
-localStorage.setItem(chave, JSON.stringify(dados))
+localStorage.setItem("receitas", JSON.stringify(receitas))
 
-}catch(error){
+localStorage.setItem("despesas", JSON.stringify(despesas))
 
-console.log("Erro ao salvar", error)
+}catch(erro){
+
+console.error("Erro ao salvar dados:", erro)
 
 }
 
 }
 
-export function carregarDados(chave){
+export function carregarDados(){
 
 try{
 
-const dados = localStorage.getItem(chave)
+const receitas = JSON.parse(localStorage.getItem("receitas")) || []
 
-return dados ? JSON.parse(dados) : []
+const despesas = JSON.parse(localStorage.getItem("despesas")) || []
 
-}catch(error){
+return {receitas, despesas}
 
-console.log("Erro ao carregar", error)
-return []
+}catch(erro){
+
+console.error("Erro ao carregar dados:", erro)
+
+return {receitas:[], despesas:[]}
 
 }
 
