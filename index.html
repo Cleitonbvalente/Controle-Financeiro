@@ -1,87 +1,75 @@
 <!DOCTYPE html>
 <html lang="pt-br">
-
 <head>
 <meta charset="UTF-8">
 <title>Controle Financeiro</title>
-
 <link rel="stylesheet" href="css/style.css">
-
 </head>
-
 <body>
-
 <h1>Controle Financeiro</h1>
-
 <section class="saldo">
-
+<!-- Elemento onde o saldo será atualizado dinamicamente pelo JavaScript -->
 <h2 id="saldo">Saldo: R$ 0</h2>
-
 </section>
 
 <section class="forms">
-
+<!-- Card de adicionar receita -->
 <div class="card">
-
 <h3>Adicionar Receita</h3>
-
 <input id="tituloReceita" placeholder="Título">
-
 <input id="valorReceita" type="number" placeholder="Valor">
-
 <input id="dataReceita" type="date">
-
-<button id="btnReceita">Adicionar Receita</button>
-
+<button id="btnReceita">
+Adicionar Receita
+</button>
 </div>
 
+<!-- Card de adicionar despesa -->
 <div class="card">
-
 <h3>Adicionar Despesa</h3>
-
 <input id="tituloDespesa" placeholder="Título">
-
 <input id="valorDespesa" type="number" placeholder="Valor">
-
-<input id="categoriaDespesa" placeholder="Categoria">
-
+<select id="categoriaDespesa">
+<option value="">Selecione uma categoria</option>
+<!-- Opções de categorias disponíveis dropdown -->
+<option value="Moradia">Moradia</option>
+<option value="Alimentação">Alimentação</option>
+<option value="Transporte">Transporte</option>
+<option value="Lazer">Lazer</option>
+<option value="Outros">Outros</option>
+</select>
 <input id="dataDespesa" type="date">
-
-<button id="btnDespesa">Adicionar Despesa</button>
-
+<button id="btnDespesa">
+Adicionar Despesa
+</button>
 </div>
-
 </section>
 
-<section>
-
+<!-- Seção responsável pelo filtro de mês -->
+<section class="filtro">
 <h3>Filtrar por mês</h3>
-
 <input type="month" id="mesFiltro">
-
 </section>
 
 <section class="listas">
-
-<div>
-
+<!-- Container da lista de receitas -->
+<div class="lista">
 <h2>Receitas</h2>
-
-<ul id="listaReceitas"></ul>
-
+<ul id="listaReceitas">
+<!-- Receitas serão inseridas dinamicamente via JavaScript -->
+</ul>
 </div>
 
-<div>
-
+<!-- Container da lista de despesas -->
+<div class="lista">
 <h2>Despesas</h2>
-
-<ul id="listaDespesas"></ul>
-
+<ul id="listaDespesas">
+<!-- Despesas serão inseridas dinamicamente via JavaScript -->
+</ul>
 </div>
-
 </section>
 
+<!-- Importação do arquivo principal JavaScript como módulo -->
 <script type="module" src="js/app.js"></script>
-
 </body>
 </html>

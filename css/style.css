@@ -1,85 +1,175 @@
+/* reset básico */
+
+*{
+box-sizing:border-box;
+margin:0;
+padding:0;
+}
+
+/* corpo da página */
 body{
-
-font-family: Arial, Helvetica, sans-serif;
-
-margin:40px;
-
-background:#f4f4f4;
-
+font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+padding:40px;
+background:linear-gradient(135deg,#4facfe,#00f2fe);
+min-height:100vh;
 }
 
+/* título */
 h1{
-
-margin-bottom:30px;
-
+text-align:center;
+color:white;
+margin-bottom:25px;
 }
+
+/* saldo */
+.saldo{
+display:flex;
+justify-content:center;
+margin-bottom:30px;
+}
+
+#saldo{
+background:white;
+padding:15px 30px;
+border-radius:10px;
+font-size:22px;
+font-weight:bold;
+box-shadow:0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* formulários */
+.forms{
+display:flex;
+justify-content:center;
+gap:40px;
+flex-wrap:wrap;
+}
+
+/* cards */
+.card{
+background:white;
+padding:25px;
+border-radius:12px;
+width:260px;
+box-shadow:0 8px 20px rgba(0,0,0,0.15);
+transition:transform 0.2s;
+}
+
+.card:hover{
+transform:translateY(-5px);
+}
+
+/* campos */
+input,
+select{
+width:100%;
+padding:10px;
+margin-bottom:12px;
+border-radius:6px;
+border:1px solid #ccc;
+font-size:14px;
+}
+
+/* botão */
+button{
+width:100%;
+padding:10px;
+border:none;
+border-radius:6px;
+background:#4facfe;
+color:white;
+font-size:15px;
+font-weight:bold;
+cursor:pointer;
+transition:0.2s;
+}
+
+button:hover{
+background:#2c8ef4;
+}
+
+/* filtro */
+section h3{
+text-align:center;
+color:white;
+margin-top:25px;
+}
+
+#mesFiltro{
+display:block;
+margin:10px auto 30px auto;
+padding:10px;
+border-radius:6px;
+border:none;
+}
+
+/* listas */
+.listas{
+display:flex;
+justify-content:center;
+gap:80px;
+flex-wrap:wrap;
+margin-top:20px;
+}
+
+/* títulos das listas */
+.listas h2{
+color:white;
+text-align:center;
+margin-bottom:10px;
+}
+
+/* lista */
+ul{
+list-style:none;
+padding:0;
+}
+
+/* itens */
+li{
+background:white;
+padding:10px 15px;
+margin-bottom:8px;
+border-radius:8px;
+box-shadow:0 3px 10px rgba(0,0,0,0.1);
+min-width:220px;
+font-size:14px;
+}
+
+/* container individual das listas */
+.lista{
+display:flex;
+flex-direction:column;
+align-items:center;
+}
+
+/* efeito visual ao passar o mouse nos itens */
+li:hover{
+transform:scale(1.02);
+transition:0.2s;
+}
+
+/* responsividade para telas menores */
+@media (max-width:768px){
 
 .forms{
-
-display:flex;
-
-gap:40px;
-
-}
-
-.card{
-
-background:white;
-
-padding:20px;
-
-border-radius:8px;
-
-box-shadow:0 2px 5px rgba(0,0,0,0.1);
-
-}
-
-input{
-
-display:block;
-
-margin-bottom:10px;
-
-padding:8px;
-
-width:200px;
-
-}
-
-button{
-
-padding:8px;
-
-cursor:pointer;
-
+flex-direction:column;
+align-items:center;
 }
 
 .listas{
-
-display:flex;
-
-gap:80px;
-
-margin-top:40px;
-
+flex-direction:column;
+align-items:center;
+gap:30px;
 }
 
-ul{
-
-list-style:none;
-
-padding:0;
-
+.card{
+width:90%;
+max-width:320px;
 }
 
 li{
-
-background:white;
-
-padding:8px;
-
-margin-bottom:5px;
-
-border-radius:5px;
+min-width:260px;
+}
 
 }
