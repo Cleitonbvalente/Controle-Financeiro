@@ -1,6 +1,16 @@
-# Sistema de Controle Financeiro
+# Controle Financeiro
 
-Projeto desenvolvido para a disciplina de Desenvolvimento Web.
+Sistema web para controle de receitas e despesas pessoais.
+
+## Funcionalidades
+
+- Cadastro de receitas
+- Cadastro de despesas
+- Listagem de receitas
+- Listagem de despesas
+- Cálculo de saldo
+- Filtro por mês
+- Persistência com LocalStorage
 
 ## Tecnologias
 
@@ -9,13 +19,17 @@ Projeto desenvolvido para a disciplina de Desenvolvimento Web.
 - JavaScript
 - LocalStorage
 
-## Funcionalidades
+## Conceitos utilizados
 
-- Adicionar receitas
-- Adicionar despesas
-- Listar receitas e despesas
-- Calcular saldo mensal
-
-## Estrutura
-
-Projeto dividido em módulos JavaScript.
+- Classes
+- Map
+- Arrow Functions
+- Reduce
+- Filter
+- Sort
+- Find
+- Spread Operator
+- Template Literals
+- Closure
+- IIFE
+- Import / Export
