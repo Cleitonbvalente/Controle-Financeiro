@@ -1,0 +1,6 @@
+export const categorias = new Map()
+categorias.set("Moradia",)
+categorias.set("Alimentação",)
+categorias.set("Transporte",)
+categorias.set("Lazer",)
+categorias.set("Outros",)
