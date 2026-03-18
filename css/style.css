@@ -1,175 +1,447 @@
-/* reset básico */
-
-*{
-box-sizing:border-box;
-margin:0;
-padding:0;
+/* Reset e Variáveis */
+:root {
+    --primary-color: #4361ee;
+    --secondary-color: #3f37c9;
+    --success-color: #4cc9f0;
+    --danger-color: #f72585;
+    --warning-color: #f8961e;
+    --light-color: #f8f9fa;
+    --dark-color: #212529;
+    --gray-color: #6c757d;
+    --border-radius: 8px;
+    --box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    --transition: all 0.3s ease;
 }
 
-/* corpo da página */
-body{
-font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-padding:40px;
-background:linear-gradient(135deg,#4facfe,#00f2fe);
-min-height:100vh;
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
 }
 
-/* título */
-h1{
-text-align:center;
-color:white;
-margin-bottom:25px;
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    min-height: 100vh;
+    padding: 20px;
+    color: var(--dark-color);
 }
 
-/* saldo */
-.saldo{
-display:flex;
-justify-content:center;
-margin-bottom:30px;
+/* Header */
+header {
+    text-align: center;
+    color: white;
+    margin-bottom: 30px;
+    padding: 20px;
 }
 
-#saldo{
-background:white;
-padding:15px 30px;
-border-radius:10px;
-font-size:22px;
-font-weight:bold;
-box-shadow:0 5px 15px rgba(0,0,0,0.2);
+header h1 {
+    font-size: 2.5em;
+    margin-bottom: 10px;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* formulários */
-.forms{
-display:flex;
-justify-content:center;
-gap:40px;
-flex-wrap:wrap;
+header p {
+    font-size: 1.2em;
+    opacity: 0.9;
 }
 
-/* cards */
-.card{
-background:white;
-padding:25px;
-border-radius:12px;
-width:260px;
-box-shadow:0 8px 20px rgba(0,0,0,0.15);
-transition:transform 0.2s;
+/* Cards */
+.card {
+    background: white;
+    border-radius: var(--border-radius);
+    padding: 20px;
+    box-shadow: var(--box-shadow);
+    transition: var(--transition);
 }
 
-.card:hover{
-transform:translateY(-5px);
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
 }
 
-/* campos */
-input,
-select{
-width:100%;
-padding:10px;
-margin-bottom:12px;
-border-radius:6px;
-border:1px solid #ccc;
-font-size:14px;
+/* Balanço */
+.balanco {
+    margin-bottom: 30px;
 }
 
-/* botão */
-button{
-width:100%;
-padding:10px;
-border:none;
-border-radius:6px;
-background:#4facfe;
-color:white;
-font-size:15px;
-font-weight:bold;
-cursor:pointer;
-transition:0.2s;
+.balanco-card {
+    max-width: 400px;
+    margin: 0 auto;
+    text-align: center;
 }
 
-button:hover{
-background:#2c8ef4;
+.balanco-valores {
+    display: flex;
+    justify-content: space-around;
+    margin-top: 20px;
 }
 
-/* filtro */
-section h3{
-text-align:center;
-color:white;
-margin-top:25px;
+.balanco-valores > div {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
 }
 
-#mesFiltro{
-display:block;
-margin:10px auto 30px auto;
-padding:10px;
-border-radius:6px;
-border:none;
+.balanco-valores span:first-child {
+    font-size: 0.9em;
+    color: var(--gray-color);
 }
 
-/* listas */
-.listas{
-display:flex;
-justify-content:center;
-gap:80px;
-flex-wrap:wrap;
-margin-top:20px;
+.balanco-valores span:last-child {
+    font-size: 1.3em;
+    font-weight: bold;
 }
 
-/* títulos das listas */
-.listas h2{
-color:white;
-text-align:center;
-margin-bottom:10px;
+.receitas-mes span:last-child {
+    color: var(--success-color);
 }
 
-/* lista */
-ul{
-list-style:none;
-padding:0;
+.despesas-mes span:last-child {
+    color: var(--danger-color);
 }
 
-/* itens */
-li{
-background:white;
-padding:10px 15px;
-margin-bottom:8px;
-border-radius:8px;
-box-shadow:0 3px 10px rgba(0,0,0,0.1);
-min-width:220px;
-font-size:14px;
+.saldo-mes span:last-child {
+    color: var(--primary-color);
 }
 
-/* container individual das listas */
-.lista{
-display:flex;
-flex-direction:column;
-align-items:center;
+/* Gerenciamento de Categorias e Tags */
+.gerenciamento {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
 }
 
-/* efeito visual ao passar o mouse nos itens */
-li:hover{
-transform:scale(1.02);
-transition:0.2s;
+.form-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 10px;
 }
 
-/* responsividade para telas menores */
-@media (max-width:768px){
-
-.forms{
-flex-direction:column;
-align-items:center;
+.lista-tags-categorias {
+    list-style: none;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-top: 10px;
 }
 
-.listas{
-flex-direction:column;
-align-items:center;
-gap:30px;
+.lista-tags-categorias li {
+    background: var(--light-color);
+    padding: 5px 10px;
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.9em;
 }
 
-.card{
-width:90%;
-max-width:320px;
+.lista-tags-categorias button {
+    background: none;
+    border: none;
+    color: var(--danger-color);
+    cursor: pointer;
+    font-size: 1.1em;
+    padding: 0 5px;
 }
 
-li{
-min-width:260px;
+/* Formulários */
+.forms {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+    gap: 20px;
+    margin-bottom: 30px;
 }
 
+.form-card {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+input, textarea, select {
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    font-size: 1em;
+    transition: var(--transition);
+}
+
+input:focus, textarea:focus, select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
+}
+
+textarea {
+    min-height: 60px;
+    resize: vertical;
+}
+
+/* Botões */
+button {
+    padding: 10px 20px;
+    border: none;
+    border-radius: var(--border-radius);
+    font-size: 1em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--secondary-color);
+}
+
+.btn-secondary {
+    background: var(--light-color);
+    color: var(--dark-color);
+}
+
+.btn-secondary:hover {
+    background: #e2e6ea;
+}
+
+.btn-small {
+    padding: 5px 10px;
+    font-size: 0.9em;
+}
+
+.btn-edit {
+    background: var(--warning-color);
+    color: white;
+    padding: 5px 10px;
+    font-size: 0.9em;
+}
+
+.btn-delete {
+    background: var(--danger-color);
+    color: white;
+    padding: 5px 10px;
+    font-size: 0.9em;
+}
+
+/* Tags Container */
+.tags-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    min-height: 40px;
+    padding: 5px;
+    background: var(--light-color);
+    border-radius: var(--border-radius);
+}
+
+.tag-item {
+    background: var(--primary-color);
+    color: white;
+    padding: 3px 8px;
+    border-radius: 15px;
+    font-size: 0.85em;
+    display: flex;
+    align-items: center;
+    gap: 3px;
+}
+
+.tag-item button {
+    background: none;
+    border: none;
+    color: white;
+    padding: 0 3px;
+    font-size: 1em;
+    cursor: pointer;
+}
+
+/* Filtro e Busca */
+.filtro-mes, .busca {
+    margin-bottom: 20px;
+}
+
+.filtro-card, .busca-card {
+    max-width: 400px;
+    margin: 0 auto;
+}
+
+.filtro-input {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+/* Listas */
+.listas {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+    gap: 20px;
+}
+
+.lista-card {
+    height: fit-content;
+}
+
+.lista-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--light-color);
+}
+
+.items-container {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-height: 500px;
+    overflow-y: auto;
+}
+
+/* Itens da Lista */
+.item-card {
+    background: var(--light-color);
+    padding: 15px;
+    border-radius: var(--border-radius);
+    border-left: 4px solid;
+    transition: var(--transition);
+}
+
+.item-card:hover {
+    transform: translateX(5px);
+}
+
+.receita-item {
+    border-left-color: var(--success-color);
+}
+
+.despesa-item {
+    border-left-color: var(--danger-color);
+}
+
+.item-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.item-titulo {
+    font-weight: bold;
+    font-size: 1.1em;
+}
+
+.item-valor {
+    font-weight: bold;
+}
+
+.receita-item .item-valor {
+    color: var(--success-color);
+}
+
+.despesa-item .item-valor {
+    color: var(--danger-color);
+}
+
+.item-descricao {
+    color: var(--gray-color);
+    font-size: 0.9em;
+    margin-bottom: 5px;
+}
+
+.item-categoria, .item-data, .item-status {
+    font-size: 0.85em;
+    color: var(--gray-color);
+    margin-bottom: 3px;
+}
+
+.item-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin: 8px 0;
+}
+
+.item-tag {
+    background: var(--primary-color);
+    color: white;
+    padding: 2px 8px;
+    border-radius: 12px;
+    font-size: 0.75em;
+}
+
+.item-acoes {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 10% auto;
+    padding: 30px;
+    border-radius: var(--border-radius);
+    max-width: 500px;
+    position: relative;
+}
+
+.close {
+    position: absolute;
+    right: 20px;
+    top: 15px;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    color: var(--gray-color);
+}
+
+.close:hover {
+    color: var(--dark-color);
+}
+
+/* Utilitários */
+.text-success { color: var(--success-color); }
+.text-danger { color: var(--danger-color); }
+.text-warning { color: var(--warning-color); }
+.text-primary { color: var(--primary-color); }
+
+/* Responsividade */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    header h1 {
+        font-size: 1.8em;
+    }
+
+    .gerenciamento,
+    .forms,
+    .listas {
+        grid-template-columns: 1fr;
+    }
+
+    .form-row {
+        flex-direction: column;
+    }
+
+    .modal-content {
+        margin: 20% auto;
+        width: 90%;
+    }
 }

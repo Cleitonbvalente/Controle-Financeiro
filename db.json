@@ -1,0 +1,46 @@
+{
+  "receitas": [
+    {
+      "id": 1,
+      "titulo": "Projeto Website",
+      "descricao": "Desenvolvimento de site institucional",
+      "valor": 3000,
+      "moeda": "BRL",
+      "data": "2026-03-15"
+    },
+    {
+      "id": 2,
+      "titulo": "Consultoria UX",
+      "descricao": "Consultoria em experiência do usuário",
+      "valor": 500,
+      "moeda": "BRL",
+      "data": ""
+    },
+    {
+      "id": 3,
+      "titulo": "Aula particular",
+      "descricao": "Aula de JavaScript",
+      "valor": 200,
+      "moeda": "BRL",
+      "data": ""
+    },
+    {
+      "titulo": "Salario",
+      "descricao": "",
+      "valor": 1000,
+      "moeda": "BRL",
+      "data": "2026-03-17",
+      "tempId": "temp_1773816157410",
+      "id": 4
+    },
+    {
+      "titulo": "Salario",
+      "descricao": "",
+      "valor": 100,
+      "moeda": "BRL",
+      "data": "2026-03-17",
+      "tempId": "temp_1773816224526",
+      "id": 5
+    }
+  ]
+}

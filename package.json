@@ -1,0 +1,15 @@
+{
+  "name": "controle-financeiro",
+  "version": "1.0.0",
+  "description": "Sistema de Gestão Financeira",
+  "scripts": {
+    "server": "json-server --watch db.json --port 3000",
+    "start": "npx http-server .",
+    "dev": "concurrently \"npm run server\" \"npm start\""
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "http-server": "^14.1.1",
+    "json-server": "^0.17.4"
+  }
+}

@@ -1,75 +1,188 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-<meta charset="UTF-8">
-<title>Controle Financeiro</title>
-<link rel="stylesheet" href="css/style.css">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão Financeira Pessoal</title>
+    <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-<h1>Controle Financeiro</h1>
-<section class="saldo">
-<!-- Elemento onde o saldo será atualizado dinamicamente pelo JavaScript -->
-<h2 id="saldo">Saldo: R$ 0</h2>
-</section>
+    <header>
+        <h1>💰 Gestão Financeira Pessoal</h1>
+        <p>Desenvolvedor Web Freelancer</p>
+    </header>
 
-<section class="forms">
-<!-- Card de adicionar receita -->
-<div class="card">
-<h3>Adicionar Receita</h3>
-<input id="tituloReceita" placeholder="Título">
-<input id="valorReceita" type="number" placeholder="Valor">
-<input id="dataReceita" type="date">
-<button id="btnReceita">
-Adicionar Receita
-</button>
-</div>
+    <main>
+        <!-- BALANÇO DO MÊS -->
+        <section class="balanco">
+            <div class="card balanco-card">
+                <h2>Balanço do Mês</h2>
+                <div class="balanco-valores">
+                    <div class="receitas-mes">
+                        <span>Receitas</span>
+                        <span id="totalReceitasMes">R$ 0,00</span>
+                    </div>
+                    <div class="despesas-mes">
+                        <span>Despesas</span>
+                        <span id="totalDespesasMes">R$ 0,00</span>
+                    </div>
+                    <div class="saldo-mes">
+                        <span>Saldo</span>
+                        <span id="saldoMes">R$ 0,00</span>
+                    </div>
+                </div>
+            </div>
+        </section>
 
-<!-- Card de adicionar despesa -->
-<div class="card">
-<h3>Adicionar Despesa</h3>
-<input id="tituloDespesa" placeholder="Título">
-<input id="valorDespesa" type="number" placeholder="Valor">
-<select id="categoriaDespesa">
-<option value="">Selecione uma categoria</option>
-<!-- Opções de categorias disponíveis dropdown -->
-<option value="Moradia">Moradia</option>
-<option value="Alimentação">Alimentação</option>
-<option value="Transporte">Transporte</option>
-<option value="Lazer">Lazer</option>
-<option value="Outros">Outros</option>
-</select>
-<input id="dataDespesa" type="date">
-<button id="btnDespesa">
-Adicionar Despesa
-</button>
-</div>
-</section>
+        <!-- GERENCIAMENTO DE CATEGORIAS E TAGS -->
+        <section class="gerenciamento">
+            <div class="card">
+                <h3>📁 Gerenciar Categorias</h3>
+                <div class="form-row">
+                    <input type="text" id="novaCategoria" placeholder="Nova categoria">
+                    <button id="btnAdicionarCategoria" class="btn-secondary">Adicionar</button>
+                </div>
+                <ul id="listaCategorias" class="lista-tags-categorias"></ul>
+            </div>
 
-<!-- Seção responsável pelo filtro de mês -->
-<section class="filtro">
-<h3>Filtrar por mês</h3>
-<input type="month" id="mesFiltro">
-</section>
+            <div class="card">
+                <h3>🏷️ Gerenciar Tags</h3>
+                <div class="form-row">
+                    <input type="text" id="novaTag" placeholder="Nova tag">
+                    <button id="btnAdicionarTag" class="btn-secondary">Adicionar</button>
+                </div>
+                <ul id="listaTags" class="lista-tags-categorias"></ul>
+            </div>
+        </section>
 
-<section class="listas">
-<!-- Container da lista de receitas -->
-<div class="lista">
-<h2>Receitas</h2>
-<ul id="listaReceitas">
-<!-- Receitas serão inseridas dinamicamente via JavaScript -->
-</ul>
-</div>
+        <!-- FORMULÁRIOS DE ADIÇÃO -->
+        <section class="forms">
+            <!-- Card Adicionar Receita -->
+            <div class="card form-card">
+                <h3>➕ Adicionar Receita</h3>
+                <input type="text" id="tituloReceita" placeholder="Título">
+                <textarea id="descricaoReceita" placeholder="Descrição"></textarea>
+                <div class="form-row">
+                    <input type="number" id="valorReceita" placeholder="Valor">
+                    <select id="moedaReceita">
+                        <option value="BRL">R$ Real</option>
+                        <option value="USD">US$ Dólar</option>
+                        <option value="EUR">€ Euro</option>
+                    </select>
+                </div>
+                <input type="date" id="dataReceita">
+                <button id="btnAdicionarReceita" class="btn-primary">Adicionar Receita</button>
+            </div>
 
-<!-- Container da lista de despesas -->
-<div class="lista">
-<h2>Despesas</h2>
-<ul id="listaDespesas">
-<!-- Despesas serão inseridas dinamicamente via JavaScript -->
-</ul>
-</div>
-</section>
+            <!-- Card Adicionar Despesa -->
+            <div class="card form-card">
+                <h3>💸 Adicionar Despesa</h3>
+                <input type="text" id="tituloDespesa" placeholder="Título">
+                <textarea id="descricaoDespesa" placeholder="Descrição"></textarea>
+                <div class="form-row">
+                    <input type="number" id="valorPrevistoDespesa" placeholder="Valor Previsto">
+                    <input type="number" id="valorRealDespesa" placeholder="Valor Real (opcional)">
+                </div>
+                <select id="categoriaDespesa" class="select-categoria">
+                    <option value="">Selecione uma categoria</option>
+                </select>
+                <div class="form-row">
+                    <select id="tagsDisponiveis" class="select-tags" multiple>
+                        <!-- Tags serão carregadas aqui -->
+                    </select>
+                    <button type="button" id="btnAdicionarTagDespesa" class="btn-small">➕ Adicionar Tag</button>
+                </div>
+                <div id="tagsSelecionadas" class="tags-container"></div>
+                <input type="date" id="dataDespesa">
+                <select id="statusDespesa">
+                    <option value="nao_paga">Não Paga</option>
+                    <option value="paga">Paga</option>
+                </select>
+                <button id="btnAdicionarDespesa" class="btn-primary">Adicionar Despesa</button>
+            </div>
+        </section>
 
-<!-- Importação do arquivo principal JavaScript como módulo -->
-<script type="module" src="js/app.js"></script>
+        <!-- FILTRO POR MÊS -->
+        <section class="filtro-mes">
+            <div class="card filtro-card">
+                <h3>📅 Filtrar por Mês</h3>
+                <input type="month" id="mesFiltro" class="filtro-input">
+                <button id="btnLimparFiltro" class="btn-secondary">Limpar Filtro</button>
+            </div>
+        </section>
+
+        <!-- BUSCA DE DESPESAS -->
+        <section class="busca">
+            <div class="card busca-card">
+                <h3>🔍 Buscar Despesas</h3>
+                <input type="text" id="buscaDespesas" placeholder="Buscar por título, descrição ou categoria...">
+            </div>
+        </section>
+
+        <!-- LISTAS DE RECEITAS E DESPESAS -->
+        <section class="listas">
+            <!-- Lista de Receitas -->
+            <div class="card lista-card">
+                <h2>📈 Receitas</h2>
+                <div class="lista-header">
+                    <span>Total: <span id="totalReceitas">R$ 0,00</span></span>
+                </div>
+                <div id="listaReceitas" class="items-container"></div>
+            </div>
+
+            <!-- Lista de Despesas -->
+            <div class="card lista-card">
+                <h2>📉 Despesas</h2>
+                <div class="lista-header">
+                    <span>Total: <span id="totalDespesas">R$ 0,00</span></span>
+                </div>
+                <div id="listaDespesas" class="items-container"></div>
+            </div>
+        </section>
+    </main>
+
+    <!-- Templates para itens -->
+    <template id="templateReceita">
+        <div class="item-card receita-item">
+            <div class="item-header">
+                <span class="item-titulo"></span>
+                <span class="item-valor"></span>
+            </div>
+            <div class="item-descricao"></div>
+            <div class="item-data"></div>
+            <div class="item-acoes">
+                <button class="btn-edit" onclick="editarReceita(this.dataset.id)">✏️ Editar</button>
+                <button class="btn-delete" onclick="removerReceita(this.dataset.id)">🗑️ Remover</button>
+            </div>
+        </div>
+    </template>
+
+    <template id="templateDespesa">
+        <div class="item-card despesa-item">
+            <div class="item-header">
+                <span class="item-titulo"></span>
+                <span class="item-valor"></span>
+            </div>
+            <div class="item-descricao"></div>
+            <div class="item-categoria"></div>
+            <div class="item-tags"></div>
+            <div class="item-data"></div>
+            <div class="item-status"></div>
+            <div class="item-acoes">
+                <button class="btn-edit" onclick="editarDespesa(this.dataset.id)">✏️ Editar</button>
+                <button class="btn-delete" onclick="removerDespesa(this.dataset.id)">🗑️ Remover</button>
+            </div>
+        </div>
+    </template>
+
+    <!-- Modal de Edição -->
+    <div id="modalEdicao" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <script type="module" src="js/app.js"></script>
 </body>
 </html>
