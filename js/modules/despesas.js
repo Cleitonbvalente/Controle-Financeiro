@@ -1,7 +1,7 @@
 // Classe Despesa
 export class Despesa {
     constructor(titulo, descricao, valorPrevisto, valorReal, categoria, tags, data, status) {
-        this.id = Date.now() + Math.random();
+        this.id = Date.now();
         this.titulo = titulo;
         this.descricao = descricao;
         this.valorPrevisto = Number(valorPrevisto);

@@ -6,7 +6,7 @@
       "descricao": "Desenvolvimento de site institucional",
       "valor": 3000,
       "moeda": "BRL",
-      "data": "2026-03-15"
+      "data": "2026-03-21"
     },
     {
       "id": 2,
@@ -21,7 +21,7 @@
       "descricao": "Dinheiro",
       "valor": 100,
       "moeda": "USD",
-      "data": "",
+      "data": "2026-03-21",
       "tempId": "temp_1774134498725",
       "id": 4
     },
@@ -39,7 +39,7 @@
       "descricao": "Dinheiro",
       "valor": 100,
       "moeda": "BRL",
-      "data": "2026-03-18",
+      "data": "2026-03-21",
       "tempId": "temp_1774138261452",
       "id": 6
     }
@@ -160,6 +160,17 @@
       "data": "2026-03-21",
       "status": "paga",
       "id": 9
+    },
+    {
+      "titulo": "Comida",
+      "descricao": "Comida",
+      "valorPrevisto": 100,
+      "valorReal": 100,
+      "categoria": "Carro",
+      "tags": [],
+      "data": "2026-03-21",
+      "status": "paga",
+      "id": 10
     }
   ]
 }
