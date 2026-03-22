@@ -524,4 +524,33 @@ button {
 .item-conversao {
     animation: highlight 1s ease-out;
 }
+/* Destaque para termos buscados */
+mark {
+    background: #ffd700;
+    padding: 0 2px;
+    border-radius: 3px;
+    color: #333;
+}
+
+/* Estilo para o container de busca */
+.busca-card {
+    text-align: center;
+}
+
+.filtro-busca label {
+    cursor: pointer;
+    padding: 5px 10px;
+    background: #f0f0f0;
+    border-radius: 20px;
+    transition: all 0.3s ease;
+}
+
+.filtro-busca label:hover {
+    background: #e0e0e0;
+}
+
+.filtro-busca input[type="checkbox"] {
+    margin-right: 5px;
+    cursor: pointer;
+}
 }

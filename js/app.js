@@ -56,11 +56,14 @@ window.garantirDataString = garantirDataString;
 // VARIÁVEIS GLOBAIS
 // ============================================
 
+// Variáveis globais do estado da aplicação
 let state = {
     receitas: [],
     despesas: [],
     mesFiltro: '',
-    buscaDespesas: ''
+    buscaGeral: '',      // Busca unificada
+    buscarReceitas: true, // Flag para buscar receitas
+    buscarDespesas: true  // Flag para buscar despesas
 };
 
 const conversor = criarConversorMoeda();
@@ -198,14 +201,20 @@ function inicializarUI() {
 // RENDERIZAÇÃO
 // ============================================
 
+// Função para renderizar a interface
 function render() {
     if (!elementos.listaReceitas || !elementos.listaDespesas) return;
+    
+    console.log('🔄 Renderizando interface...');
+    console.log(`📅 Filtro ativo: ${state.mesFiltro || 'nenhum'}`);
+    
     renderReceitas();
     renderDespesas();
     atualizarBalanco();
 }
 
 // Renderiza receitas (VERSÃO CORRIGIDA COM CONVERSÃO)
+// Renderiza receitas (COM BUSCA)
 function renderReceitas() {
     if (!elementos.listaReceitas) return;
     
@@ -220,6 +229,11 @@ function renderReceitas() {
         );
     }
     
+    // Filtra por busca (se a flag estiver ativa)
+    if (state.buscarReceitas && state.buscaGeral) {
+        receitasFiltradas = receitasFiltradas.filter(r => filtrarPorBusca(r, 'receita'));
+    }
+    
     // Ordena por data (mais recente primeiro)
     receitasFiltradas.sort((a, b) => {
         if (!a.data) return 1;
@@ -227,52 +241,81 @@ function renderReceitas() {
         return new Date(b.data) - new Date(a.data);
     });
     
-    console.log(`📊 Renderizando ${receitasFiltradas.length} receitas`);
+    console.log(`📊 Renderizando ${receitasFiltradas.length} receitas (busca: "${state.buscaGeral || 'nenhuma'}")`);
     
-    // Renderiza cada receita
+    if (receitasFiltradas.length === 0) {
+        elementos.listaReceitas.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">Nenhuma receita encontrada</div>';
+        return;
+    }
+    
     receitasFiltradas.forEach(receita => {
+        // Garante que os valores existem
+        const valorOriginal = receita.valorOriginal || receita.valor;
+        const moeda = receita.moeda || 'BRL';
+        const valorEmReal = receita.valorEmReal || conversor.converterParaReal(valorOriginal, moeda);
+        
         const div = document.createElement('div');
         div.className = 'item-card receita-item';
+        div.style.borderLeft = '4px solid #4cc9f0';
+        div.style.padding = '15px';
+        div.style.marginBottom = '10px';
+        div.style.backgroundColor = '#f8f9fa';
+        div.style.borderRadius = '8px';
         
-        // Calcula os valores
-        let valorOriginal = receita.valorOriginal || receita.valor || 0;
-        let moeda = receita.moeda || 'BRL';
-        let valorEmReal = receita.valorEmReal || conversor.converterParaReal(valorOriginal, moeda);
+        // Destaca o termo buscado
+        const termoBusca = state.buscaGeral;
+        let tituloDisplay = receita.titulo || 'Sem título';
+        let descricaoDisplay = receita.descricao || 'Sem descrição';
+        
+        if (termoBusca) {
+            const regex = new RegExp(`(${termoBusca})`, 'gi');
+            tituloDisplay = tituloDisplay.replace(regex, '<mark style="background: #ffd700; padding: 0 2px; border-radius: 3px;">$1</mark>');
+            descricaoDisplay = descricaoDisplay.replace(regex, '<mark style="background: #ffd700; padding: 0 2px; border-radius: 3px;">$1</mark>');
+        }
         
         // Formata os valores
         const valorOriginalFormatado = conversor.formatarValor(valorOriginal, moeda);
         const valorRealFormatado = conversor.formatarReal(valorEmReal);
         
-        // Exibe o valor com a moeda original e a conversão
-        const exibicaoValor = moeda === 'BRL' 
-            ? valorRealFormatado 
-            : `${valorOriginalFormatado} ≈ ${valorRealFormatado}`;
-        
-        div.innerHTML = `
-            <div class="item-header">
-                <span class="item-titulo">${receita.titulo || 'Sem título'}</span>
-                <span class="item-valor" style="font-size: 1.1em; font-weight: bold;">
-                    ${exibicaoValor}
-                </span>
-            </div>
-            <div class="item-descricao" style="color: #666; margin: 5px 0;">
-                ${receita.descricao || 'Sem descrição'}
-            </div>
-            ${moeda !== 'BRL' ? `
-                <div class="item-conversao" style="font-size: 0.85em; color: #888; margin: 3px 0;">
-                    💱 Taxa: 1 ${moeda} = R$ ${conversor.getTaxa(moeda).toFixed(2)}
+        // HTML da receita
+        let html = `
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                <div>
+                    <strong style="font-size: 1.1em;">${tituloDisplay}</strong>
                 </div>
-            ` : ''}
-            <div class="item-data" style="font-size: 0.85em; color: #888;">
+                <div style="text-align: right;">
+                    <div style="font-weight: bold; font-size: 1.1em; color: #4cc9f0;">
+                        ${moeda === 'BRL' ? valorRealFormatado : `${valorOriginalFormatado}`}
+                    </div>
+        `;
+        
+        if (moeda !== 'BRL') {
+            html += `
+                    <div style="font-size: 0.8em; color: #888; margin-top: 3px;">
+                        ≈ ${valorRealFormatado} 
+                        <span style="font-size: 0.7em;">(taxa: 1 ${moeda} = R$ ${conversor.getTaxa(moeda).toFixed(2)})</span>
+                    </div>
+            `;
+        }
+        
+        html += `
+                </div>
+            </div>
+            <div style="color: #666; margin-bottom: 8px;">
+                ${descricaoDisplay}
+            </div>
+            <div style="font-size: 0.85em; color: #888; margin-bottom: 10px;">
                 📅 ${receita.data ? new Date(receita.data).toLocaleDateString('pt-BR') : 'Sem data'}
             </div>
-            <div class="item-acoes" style="margin-top: 10px;">
-                <button class="btn-edit" data-id="${receita.id}" style="background: #f8961e; color: white; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer;">✏️ Editar</button>
-                <button class="btn-delete" data-id="${receita.id}" style="background: #f72585; color: white; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; margin-left: 5px;">🗑️ Remover</button>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn-edit" data-id="${receita.id}" style="background: #f8961e; color: white; padding: 5px 12px; border: none; border-radius: 5px; cursor: pointer;">✏️ Editar</button>
+                <button class="btn-delete" data-id="${receita.id}" style="background: #f72585; color: white; padding: 5px 12px; border: none; border-radius: 5px; cursor: pointer;">🗑️ Remover</button>
             </div>
         `;
         
-        // Adiciona eventos
+        div.innerHTML = html;
+        
+        // Eventos
         const btnEdit = div.querySelector('.btn-edit');
         const btnDelete = div.querySelector('.btn-delete');
         
@@ -282,24 +325,26 @@ function renderReceitas() {
         elementos.listaReceitas.appendChild(div);
     });
     
-    // Atualiza total (sempre em Real)
+    // Calcula total
     const total = receitasFiltradas.reduce((acc, r) => {
         const valor = r.valorEmReal || conversor.converterParaReal(r.valorOriginal || r.valor || 0, r.moeda || 'BRL');
         return acc + valor;
     }, 0);
     
     if (elementos.totalReceitas) {
-        elementos.totalReceitas.textContent = conversor.formatarReal(total);
-        // Adiciona tooltip mostrando total em outras moedas
-        elementos.totalReceitas.title = `Total em Real: R$ ${total.toFixed(2)}`;
+        elementos.totalReceitas.innerHTML = conversor.formatarReal(total);
     }
 }
 
+// Renderiza despesas (COM BUSCA UNIFICADA)
 function renderDespesas() {
+    if (!elementos.listaDespesas) return;
+    
     elementos.listaDespesas.innerHTML = '';
     
     let despesasFiltradas = [...state.despesas];
     
+    // Filtra por mês
     if (state.mesFiltro) {
         despesasFiltradas = despesasFiltradas.filter(d => {
             if (!d.data) return false;
@@ -307,14 +352,12 @@ function renderDespesas() {
         });
     }
     
-    if (state.buscaDespesas) {
-        const termo = state.buscaDespesas.toLowerCase();
-        despesasFiltradas = despesasFiltradas.filter(d => 
-            (d.titulo && d.titulo.toLowerCase().includes(termo)) ||
-            (d.descricao && d.descricao.toLowerCase().includes(termo))
-        );
+    // Filtra por busca (se a flag estiver ativa)
+    if (state.buscarDespesas && state.buscaGeral) {
+        despesasFiltradas = despesasFiltradas.filter(d => filtrarPorBusca(d, 'despesa'));
     }
     
+    // Ordena por data
     despesasFiltradas.sort((a, b) => {
         if (!a.data) return 1;
         if (!b.data) return -1;
@@ -323,39 +366,92 @@ function renderDespesas() {
         return dataB - dataA;
     });
     
+    console.log(`📊 Renderizando ${despesasFiltradas.length} despesas (busca: "${state.buscaGeral || 'nenhuma'}")`);
+    
+    if (despesasFiltradas.length === 0) {
+        elementos.listaDespesas.innerHTML = '<div style="text-align: center; padding: 20px; color: #888;">Nenhuma despesa encontrada</div>';
+        return;
+    }
+    
+    const termoBusca = state.buscaGeral;
+    
     despesasFiltradas.forEach(despesa => {
         const categoria = categoriasMap.get(despesa.categoria);
         const nomeCategoria = categoria ? `${categoria.icone} ${categoria.nome}` : 'Sem categoria';
         
+        // Destaca o termo buscado
+        let tituloDisplay = despesa.titulo || 'Sem título';
+        let descricaoDisplay = despesa.descricao || 'Sem descrição';
+        let categoriaDisplay = nomeCategoria;
+        
+        if (termoBusca) {
+            const regex = new RegExp(`(${termoBusca})`, 'gi');
+            tituloDisplay = tituloDisplay.replace(regex, '<mark style="background: #ffd700; padding: 0 2px; border-radius: 3px;">$1</mark>');
+            descricaoDisplay = descricaoDisplay.replace(regex, '<mark style="background: #ffd700; padding: 0 2px; border-radius: 3px;">$1</mark>');
+            categoriaDisplay = categoriaDisplay.replace(regex, '<mark style="background: #ffd700; padding: 0 2px; border-radius: 3px;">$1</mark>');
+        }
+        
         const tagsHtml = (despesa.tags || []).map(tagId => {
             const tag = tagsMap.get(tagId);
-            return tag ? `<span class="item-tag">${tag.nome}</span>` : '';
+            let tagNome = tag ? tag.nome : '';
+            if (termoBusca && tagNome.toLowerCase().includes(termoBusca.toLowerCase())) {
+                const regex = new RegExp(`(${termoBusca})`, 'gi');
+                tagNome = tagNome.replace(regex, '<mark style="background: #ffd700; padding: 0 2px; border-radius: 3px;">$1</mark>');
+            }
+            return tag ? `<span class="item-tag" style="background: #4361ee; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.75em; margin: 2px;">${tagNome}</span>` : '';
         }).join('');
         
         const div = document.createElement('div');
         div.className = `item-card despesa-item ${despesa.status === 'paga' ? 'paga' : 'pendente'}`;
+        div.style.borderLeft = `4px solid ${despesa.status === 'paga' ? '#4cc9f0' : '#f8961e'}`;
+        div.style.padding = '15px';
+        div.style.marginBottom = '10px';
+        div.style.backgroundColor = '#f8f9fa';
+        div.style.borderRadius = '8px';
+        
         div.innerHTML = `
-            <div class="item-header">
-                <span class="item-titulo">${despesa.titulo || 'Sem título'}</span>
-                <span class="item-valor">R$ ${(despesa.valorPrevisto || 0).toFixed(2)}</span>
+            <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
+                <div>
+                    <strong style="font-size: 1.1em;">${tituloDisplay}</strong>
+                </div>
+                <div style="text-align: right;">
+                    <div style="font-weight: bold; font-size: 1.1em; color: ${despesa.status === 'paga' ? '#4cc9f0' : '#f8961e'};">
+                        R$ ${(despesa.valorPrevisto || 0).toFixed(2)}
+                    </div>
+                    <div style="font-size: 0.8em; color: #888;">
+                        ${despesa.status === 'paga' ? '✓ Paga' : '⏳ Pendente'}
+                    </div>
+                </div>
             </div>
-            <div class="item-descricao">${despesa.descricao || 'Sem descrição'}</div>
-            <div class="item-categoria">📁 ${nomeCategoria}</div>
-            <div class="item-tags">${tagsHtml}</div>
-            <div class="item-data">${despesa.data ? new Date(garantirDataString(despesa.data)).toLocaleDateString('pt-BR') : 'Sem data'}</div>
-            <div class="item-status">${despesa.status === 'paga' ? '✅ Paga' : '⏳ Não Paga'}</div>
-            <div class="item-acoes">
-                <button class="btn-edit" data-id="${despesa.id}">✏️ Editar</button>
-                <button class="btn-delete" data-id="${despesa.id}">🗑️ Remover</button>
+            <div style="color: #666; margin-bottom: 8px;">
+                ${descricaoDisplay}
+            </div>
+            <div style="font-size: 0.85em; color: #888; margin-bottom: 5px;">
+                📁 ${categoriaDisplay}
+            </div>
+            <div style="margin: 8px 0;">
+                ${tagsHtml}
+            </div>
+            <div style="font-size: 0.85em; color: #888; margin-bottom: 10px;">
+                📅 ${despesa.data ? new Date(garantirDataString(despesa.data)).toLocaleDateString('pt-BR') : 'Sem data'}
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <button class="btn-edit" data-id="${despesa.id}" style="background: #f8961e; color: white; padding: 5px 12px; border: none; border-radius: 5px; cursor: pointer;">✏️ Editar</button>
+                <button class="btn-delete" data-id="${despesa.id}" style="background: #f72585; color: white; padding: 5px 12px; border: none; border-radius: 5px; cursor: pointer;">🗑️ Remover</button>
             </div>
         `;
         
-        div.querySelector('.btn-edit').onclick = () => abrirModalEdicaoDespesa(despesa.id);
-        div.querySelector('.btn-delete').onclick = () => removerDespesa(despesa.id);
+        // Eventos
+        const btnEdit = div.querySelector('.btn-edit');
+        const btnDelete = div.querySelector('.btn-delete');
+        
+        btnEdit.onclick = () => abrirModalEdicaoDespesa(despesa.id);
+        btnDelete.onclick = () => removerDespesa(despesa.id);
         
         elementos.listaDespesas.appendChild(div);
     });
     
+    // Atualiza total
     const total = despesasFiltradas.reduce((acc, d) => acc + (d.valorPrevisto || 0), 0);
     if (elementos.totalDespesas) {
         elementos.totalDespesas.textContent = `R$ ${total.toFixed(2)}`;
@@ -363,64 +459,128 @@ function renderDespesas() {
 }
 
 // Atualiza balanço do mês (VERSÃO CORRIGIDA COM CONVERSÃO)
+// Atualiza balanço do mês (considera apenas filtro de mês, NÃO considera busca)
 function atualizarBalanco() {
+    console.log('📊 Calculando balanço...');
+    
     let receitasMes = [...state.receitas];
     let despesasMes = [...state.despesas];
     
+    // Filtra por mês se houver filtro ativo
     if (state.mesFiltro) {
+        console.log(`📅 Filtrando por mês: ${state.mesFiltro}`);
+        
         // Filtra receitas
-        receitasMes = receitasMes.filter(r => r.data && r.data.startsWith(state.mesFiltro));
+        receitasMes = receitasMes.filter(r => {
+            if (!r.data) return false;
+            // Extrai o mês/ano da data (formato YYYY-MM)
+            const mesAno = r.data.substring(0, 7);
+            return mesAno === state.mesFiltro;
+        });
         
         // Filtra despesas
         despesasMes = despesasMes.filter(d => {
             if (!d.data) return false;
             const dataString = garantirDataString(d.data);
-            return dataString.startsWith(state.mesFiltro);
+            const mesAno = dataString.substring(0, 7);
+            return mesAno === state.mesFiltro;
         });
+        
+        console.log(`📊 Receitas no mês: ${receitasMes.length}, Despesas no mês: ${despesasMes.length}`);
     }
     
     // Calcula total de receitas (sempre em Real)
     const totalReceitas = receitasMes.reduce((acc, r) => {
-        const valor = r.valorEmReal || conversor.converterParaReal(r.valorOriginal || r.valor || 0, r.moeda || 'BRL');
+        let valor;
+        
+        // Tenta pegar o valor já convertido
+        if (r.valorEmReal !== undefined && r.valorEmReal !== null) {
+            valor = r.valorEmReal;
+        } 
+        // Se não tiver, tenta converter
+        else {
+            const valorOriginal = r.valorOriginal || r.valor || 0;
+            const moeda = r.moeda || 'BRL';
+            valor = conversor.converterParaReal(valorOriginal, moeda);
+        }
+        
         return acc + valor;
     }, 0);
     
     // Calcula total de despesas (já estão em Real)
     const totalDespesas = despesasMes.reduce((acc, d) => {
-        return acc + (d.getValorBalanco ? d.getValorBalanco() : (d.valorPrevisto || 0));
+        // Usa o valor do balanço (valorReal se paga, senão valorPrevisto)
+        const valor = d.getValorBalanco ? d.getValorBalanco() : (d.valorPrevisto || 0);
+        return acc + valor;
     }, 0);
     
+    // Calcula o saldo
     const saldo = totalReceitas - totalDespesas;
     
-    // Atualiza elementos
+    // Atualiza os elementos do DOM
     if (elementos.totalReceitasMes) {
         elementos.totalReceitasMes.textContent = conversor.formatarReal(totalReceitas);
-        // Adiciona informações adicionais
-        if (receitasMes.some(r => r.moeda && r.moeda !== 'BRL')) {
-            elementos.totalReceitasMes.title = `Total convertido para Real`;
+        
+        // Adiciona tooltip com detalhes
+        if (receitasMes.length > 0) {
+            const detalhesReceitas = receitasMes.map(r => {
+                const valorOrig = r.valorOriginal || r.valor;
+                const moeda = r.moeda || 'BRL';
+                return `${r.titulo}: ${conversor.formatarValor(valorOrig, moeda)} → ${conversor.formatarReal(r.valorEmReal || valorOrig)}`;
+            }).join('\n');
+            elementos.totalReceitasMes.title = `Detalhes:\n${detalhesReceitas}`;
+        } else {
+            elementos.totalReceitasMes.title = 'Nenhuma receita no período';
         }
     }
     
     if (elementos.totalDespesasMes) {
         elementos.totalDespesasMes.textContent = conversor.formatarReal(totalDespesas);
+        
+        // Adiciona tooltip com detalhes
+        if (despesasMes.length > 0) {
+            const detalhesDespesas = despesasMes.map(d => {
+                const categoria = categoriasMap.get(d.categoria);
+                const nomeCategoria = categoria ? categoria.nome : 'Sem categoria';
+                return `${d.titulo}: R$ ${(d.valorPrevisto || 0).toFixed(2)} (${nomeCategoria})`;
+            }).join('\n');
+            elementos.totalDespesasMes.title = `Detalhes:\n${detalhesDespesas}`;
+        } else {
+            elementos.totalDespesasMes.title = 'Nenhuma despesa no período';
+        }
     }
     
     if (elementos.saldoMes) {
         elementos.saldoMes.textContent = conversor.formatarReal(saldo);
-        elementos.saldoMes.style.color = saldo >= 0 ? '#4cc9f0' : '#f72585';
         
-        // Adiciona mensagem de alerta se saldo for negativo
-        if (saldo < 0) {
-            elementos.saldoMes.title = `⚠️ Saldo negativo! Despesas excedem receitas em R$ ${Math.abs(saldo).toFixed(2)}`;
+        // Define a cor baseado no saldo
+        if (saldo >= 0) {
+            elementos.saldoMes.style.color = '#4cc9f0'; // Verde/azul para positivo
+            elementos.saldoMes.title = `✅ Saldo positivo! Você está no azul.`;
         } else {
-            elementos.saldoMes.title = `✅ Saldo positivo!`;
+            elementos.saldoMes.style.color = '#f72585'; // Vermelho para negativo
+            elementos.saldoMes.title = `⚠️ Saldo negativo! Você está no vermelho. Economize R$ ${Math.abs(saldo).toFixed(2)} para equilibrar.`;
         }
+        
+        // Adiciona emoji indicador
+        const emoji = saldo >= 0 ? '📈' : '📉';
+        elementos.saldoMes.innerHTML = `${emoji} ${conversor.formatarReal(saldo)}`;
     }
     
-    console.log(`📊 Balanço do mês ${state.mesFiltro || 'atual'}:`);
-    console.log(`   Receitas: R$ ${totalReceitas.toFixed(2)}`);
-    console.log(`   Despesas: R$ ${totalDespesas.toFixed(2)}`);
-    console.log(`   Saldo: R$ ${saldo.toFixed(2)}`);
+    // Log no console para debug
+    console.log(`📊 BALANÇO DO MÊS ${state.mesFiltro || 'ATUAL'}:`);
+    console.log(`   💰 Receitas: ${conversor.formatarReal(totalReceitas)}`);
+    console.log(`   💸 Despesas: ${conversor.formatarReal(totalDespesas)}`);
+    console.log(`   💵 Saldo: ${conversor.formatarReal(saldo)}`);
+    
+    // Retorna os valores para possível uso
+    return {
+        totalReceitas,
+        totalDespesas,
+        saldo,
+        qtdReceitas: receitasMes.length,
+        qtdDespesas: despesasMes.length
+    };
 }
 
 // ============================================
@@ -1182,6 +1342,41 @@ function registrarEventListeners() {
         const modal = document.getElementById('modalEdicao');
         if (modal && e.target === modal) modal.style.display = 'none';
     };
+
+    // No final da função registrarEventListeners(), adicione:
+
+// Busca unificada
+const buscaGeral = document.getElementById('buscaGeral');
+const checkReceitas = document.getElementById('buscarReceitas');
+const checkDespesas = document.getElementById('buscarDespesas');
+
+if (buscaGeral) {
+    let timeoutId;
+    buscaGeral.addEventListener('input', (e) => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            state.buscaGeral = e.target.value;
+            console.log('🔍 Busca geral:', state.buscaGeral);
+            render();
+        }, 300);
+    });
+}
+
+if (checkReceitas) {
+    checkReceitas.addEventListener('change', (e) => {
+        state.buscarReceitas = e.target.checked;
+        console.log('📈 Buscar receitas:', state.buscarReceitas);
+        render();
+    });
+}
+
+if (checkDespesas) {
+    checkDespesas.addEventListener('change', (e) => {
+        state.buscarDespesas = e.target.checked;
+        console.log('📉 Buscar despesas:', state.buscarDespesas);
+        render();
+    });
+}
 }
 
 // ============================================
@@ -1239,3 +1434,35 @@ document.addEventListener('DOMContentLoaded', async function() {
         alert('Erro ao iniciar o sistema. Verifique o console.');
     }
 });
+
+// Função para filtrar itens por busca (unificada)
+function filtrarPorBusca(item, tipo) {
+    if (!state.buscaGeral) return true;
+    
+    const termo = state.buscaGeral.toLowerCase();
+    
+    if (tipo === 'receita') {
+        return (item.titulo && item.titulo.toLowerCase().includes(termo)) ||
+               (item.descricao && item.descricao.toLowerCase().includes(termo));
+    }
+    
+    if (tipo === 'despesa') {
+        // Busca por título
+        if (item.titulo && item.titulo.toLowerCase().includes(termo)) return true;
+        // Busca por descrição
+        if (item.descricao && item.descricao.toLowerCase().includes(termo)) return true;
+        // Busca por categoria (nome)
+        const categoria = categoriasMap.get(item.categoria);
+        if (categoria && categoria.nome.toLowerCase().includes(termo)) return true;
+        // Busca por tags
+        if (item.tags && item.tags.length > 0) {
+            for (const tagId of item.tags) {
+                const tag = tagsMap.get(tagId);
+                if (tag && tag.nome.toLowerCase().includes(termo)) return true;
+            }
+        }
+        return false;
+    }
+    
+    return false;
+}

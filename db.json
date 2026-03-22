@@ -149,6 +149,17 @@
       "data": "2026-03-20",
       "status": "paga",
       "id": 8
+    },
+    {
+      "titulo": "Extra",
+      "descricao": "Extra",
+      "valorPrevisto": 100,
+      "valorReal": 100,
+      "categoria": "Carro",
+      "tags": [],
+      "data": "2026-03-21",
+      "status": "paga",
+      "id": 9
     }
   ]
 }

@@ -112,10 +112,19 @@
         </section>
 
         <!-- BUSCA DE DESPESAS -->
+        <!-- BUSCA DE RECEITAS E DESPESAS -->
         <section class="busca">
             <div class="card busca-card">
-                <h3>🔍 Buscar Despesas</h3>
-                <input type="text" id="buscaDespesas" placeholder="Buscar por título, descrição ou categoria...">
+                <h3>🔍 Buscar Receitas e Despesas</h3>
+                <input type="text" id="buscaGeral" placeholder="Buscar por título, descrição ou categoria...">
+                <div class="filtro-busca" style="margin-top: 10px; display: flex; gap: 10px; justify-content: center;">
+                    <label style="display: flex; align-items: center; gap: 5px;">
+                        <input type="checkbox" id="buscarReceitas" checked> Receitas
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 5px;">
+                        <input type="checkbox" id="buscarDespesas" checked> Despesas
+                    </label>
+                </div>
             </div>
         </section>
 
