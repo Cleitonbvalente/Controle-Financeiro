@@ -1,3 +1,4 @@
+// js/modules/categorias.js
 import { salvarCategorias, carregarCategorias } from '../storage/localStorage.js';
 
 // Classe Categoria
@@ -16,13 +17,13 @@ export const categoriasMap = new Map();
 export function initCategorias() {
     console.log('🔧 Inicializando categorias...');
     
-    // Primeiro, limpa o Map para evitar duplicatas
+    // Limpa o Map antes de carregar
     categoriasMap.clear();
     
     const categoriasSalvas = carregarCategorias();
     console.log('📥 Categorias carregadas do storage:', categoriasSalvas);
     
-    if (categoriasSalvas.length === 0) {
+    if (!categoriasSalvas || categoriasSalvas.length === 0) {
         // Categorias padrão
         const defaultCategorias = [
             new Categoria('Moradia', '🏠'),
@@ -31,6 +32,7 @@ export function initCategorias() {
             new Categoria('Saúde', '🏥'),
             new Categoria('Educação', '📚'),
             new Categoria('Lazer', '🎮'),
+            new Categoria('Trabalho', '💼'),
             new Categoria('Outros', '📦')
         ];
         
@@ -38,26 +40,24 @@ export function initCategorias() {
             categoriasMap.set(cat.id, cat);
         });
         console.log('✅ Categorias padrão criadas:', defaultCategorias);
+        // Salva categorias padrão no localStorage
+        salvarCategorias(Array.from(categoriasMap.values()));
     } else {
         // Reconstrói cada categoria como objeto Categoria
         categoriasSalvas.forEach(cat => {
-            // Verifica se já existe um objeto com métodos
             if (cat && cat.nome) {
-                // Cria nova instância de Categoria com os dados salvos
                 const categoria = new Categoria(cat.nome, cat.icone || '📁');
-                categoria.id = cat.id; // Mantém o ID original
+                categoria.id = cat.id;
                 categoriasMap.set(cat.id, categoria);
                 console.log(`✅ Categoria restaurada: ${categoria.nome} (ID: ${categoria.id})`);
             }
         });
     }
     
-    // Salva no localStorage para garantir consistência
-    salvarCategorias(Array.from(categoriasMap.values()));
     console.log('📁 Categorias no Map:', Array.from(categoriasMap.entries()));
 }
 
-// CRUD de Categorias
+// CRUD de Categorias - ADICIONAR
 export function adicionarCategoria(nome, icone = '📁') {
     try {
         if (!nome || nome.trim() === '') {
@@ -84,49 +84,112 @@ export function adicionarCategoria(nome, icone = '📁') {
     }
 }
 
+// CRUD de Categorias - REMOVER (VERSÃO CORRIGIDA)
 export function removerCategoria(id) {
     try {
-        if (!categoriasMap.has(id)) {
+        console.log(`🗑️ Tentando remover categoria com ID: ${id}`);
+        console.log(`🔍 Tipo do ID: ${typeof id}, valor: ${id}`);
+        
+        // Converte para string para comparação
+        const idString = String(id);
+        
+        // Verifica se a categoria existe
+        let categoriaExistente = null;
+        for (let [key, value] of categoriasMap.entries()) {
+            if (String(key) === idString) {
+                categoriaExistente = value;
+                break;
+            }
+        }
+        
+        if (!categoriaExistente) {
+            console.error('❌ Categoria não encontrada no Map');
+            console.log('📁 Categorias disponíveis:', Array.from(categoriasMap.keys()));
             throw new Error('Categoria não encontrada');
         }
         
-        // Verifica se alguma despesa usa esta categoria (opcional)
-        // Esta verificação pode ser feita no app.js se necessário
+        console.log(`✅ Categoria encontrada: ${categoriaExistente.icone} ${categoriaExistente.nome} (ID: ${categoriaExistente.id})`);
         
-        const categoriaRemovida = categoriasMap.get(id);
-        const result = categoriasMap.delete(id);
-        salvarCategorias(Array.from(categoriasMap.values()));
-        console.log('✅ Categoria removida:', categoriaRemovida?.nome);
-        return result;
+        // Remove do Map
+        const result = categoriasMap.delete(categoriaExistente.id);
+        
+        if (result) {
+            // Salva no localStorage
+            salvarCategorias(Array.from(categoriasMap.values()));
+            console.log(`✅ Categoria "${categoriaExistente.nome}" removida com sucesso`);
+            console.log(`📊 Total de categorias após remoção: ${categoriasMap.size}`);
+            return true;
+        } else {
+            throw new Error('Falha ao remover categoria do Map');
+        }
+        
     } catch (error) {
         console.error('❌ Erro ao remover categoria:', error);
         throw error;
     }
 }
 
+// CRUD de Categorias - ATUALIZAR
+export function atualizarCategoria(id, novoNome, novoIcone = null) {
+    try {
+        console.log(`✏️ Tentando atualizar categoria ${id} para "${novoNome}"`);
+        
+        const categoria = categoriasMap.get(id);
+        if (!categoria) {
+            throw new Error('Categoria não encontrada');
+        }
+        
+        // Verifica se o novo nome já existe em outra categoria
+        const existe = Array.from(categoriasMap.values()).some(
+            c => c.nome.toLowerCase() === novoNome.toLowerCase() && c.id !== id
+        );
+        
+        if (existe) {
+            throw new Error('Já existe uma categoria com este nome');
+        }
+        
+        const nomeAntigo = categoria.nome;
+        categoria.nome = novoNome;
+        if (novoIcone) {
+            categoria.icone = novoIcone;
+        }
+        
+        salvarCategorias(Array.from(categoriasMap.values()));
+        console.log(`✅ Categoria atualizada: "${nomeAntigo}" -> "${novoNome}"`);
+        return categoria;
+    } catch (error) {
+        console.error('❌ Erro ao atualizar categoria:', error);
+        throw error;
+    }
+}
+
+// CRUD de Categorias - LISTAR
 export function listarCategorias() {
     const categorias = Array.from(categoriasMap.values());
     console.log('📋 Listando categorias:', categorias.map(c => ({ id: c.id, nome: c.nome, icone: c.icone })));
     return categorias;
 }
 
+// CRUD de Categorias - BUSCAR POR ID
 export function getCategoria(id) {
     if (!id) {
         console.warn('⚠️ ID da categoria não fornecido');
         return null;
     }
     
-    // Tenta buscar como string (pode ser que o ID seja número)
-    const categoria = categoriasMap.get(id) || categoriasMap.get(String(id));
+    // Converte para string para busca
+    const idString = String(id);
     
-    if (!categoria) {
-        console.warn(`⚠️ Categoria não encontrada para ID: ${id}`);
-        console.log('📁 IDs disponíveis:', Array.from(categoriasMap.keys()));
-    } else {
-        console.log(`✅ Categoria encontrada: ${categoria.nome} (ID: ${id})`);
+    // Busca no Map comparando como string
+    for (let [key, value] of categoriasMap.entries()) {
+        if (String(key) === idString) {
+            console.log(`🔍 Categoria encontrada: ${value.icone} ${value.nome} (ID: ${key})`);
+            return value;
+        }
     }
     
-    return categoria;
+    console.warn(`⚠️ Categoria não encontrada para ID: ${id}`);
+    return null;
 }
 
 // Função para recarregar categorias do storage
@@ -135,3 +198,59 @@ export function recarregarCategorias() {
     initCategorias();
     return listarCategorias();
 }
+
+// Função para verificar se uma categoria está sendo usada em alguma despesa
+export function categoriaEstaEmUso(categoriaId, despesas) {
+    try {
+        console.log(`🔍 Verificando se categoria ${categoriaId} está em uso...`);
+        
+        if (!despesas || despesas.length === 0) {
+            console.log('📊 Nenhuma despesa para verificar');
+            return false;
+        }
+        
+        const idString = String(categoriaId);
+        const emUso = despesas.some(despesa => {
+            const categoriaDespesa = despesa.categoria;
+            return String(categoriaDespesa) === idString;
+        });
+        
+        if (emUso) {
+            console.log(`⚠️ Categoria está sendo usada em ${despesas.filter(d => String(d.categoria) === idString).length} despesa(s)`);
+        } else {
+            console.log('✅ Categoria não está em uso');
+        }
+        
+        return emUso;
+    } catch (error) {
+        console.error('❌ Erro ao verificar uso da categoria:', error);
+        return false;
+    }
+}
+
+// Função para limpar todas as categorias (útil para testes)
+export function limparTodasCategorias() {
+    try {
+        console.log('🧹 Limpando todas as categorias...');
+        categoriasMap.clear();
+        salvarCategorias([]);
+        console.log('✅ Todas as categorias foram removidas');
+        return true;
+    } catch (error) {
+        console.error('❌ Erro ao limpar categorias:', error);
+        return false;
+    }
+}
+
+// Exporta funções adicionais
+export default {
+    initCategorias,
+    adicionarCategoria,
+    removerCategoria,
+    atualizarCategoria,
+    listarCategorias,
+    getCategoria,
+    recarregarCategorias,
+    categoriaEstaEmUso,
+    limparTodasCategorias
+};

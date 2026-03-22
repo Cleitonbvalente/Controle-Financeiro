@@ -1,8 +1,10 @@
+// js/app.js - VERSÃO COMPLETA COM DESPESAS DO JSON SERVER
 import { 
     fetchReceitas, 
     addReceitaAPI, 
     deleteReceitaAPI,
-    patchReceitaAPI
+    patchReceitaAPI,
+    verificarApiSaude
 } from './modules/api.js';
 
 import { 
@@ -14,7 +16,8 @@ import {
     adicionarCategoria, 
     removerCategoria, 
     listarCategorias, 
-    categoriasMap 
+    categoriasMap,
+    recarregarCategorias
 } from './modules/categorias.js';
 
 import { 
@@ -32,7 +35,13 @@ import {
 
 import { criarConversorMoeda } from './utils/conversorMoeda.js';
 
-// Função utilitária para garantir que data seja string
+// Importa o serviço de despesas da API
+import { despesaAPIService } from './services/despesaAPIService.js';
+
+// ============================================
+// FUNÇÕES UTILITÁRIAS GLOBAIS
+// ============================================
+
 function garantirDataString(data) {
     if (!data) return '';
     if (data instanceof Date) {
@@ -41,34 +50,12 @@ function garantirDataString(data) {
     return String(data);
 }
 
-// AGUARDA O DOM CARREGAR COMPLETAMENTE
-document.addEventListener('DOMContentLoaded', async function() {
-    console.log('🚀 Iniciando Sistema de Gestão Financeira...');
-    console.log('📁 Carregando módulos...');
-    
-    try {
-        // Inicializa categorias e tags
-        console.log('🔧 Inicializando categorias...');
-        initCategorias();
-        
-        console.log('🔧 Inicializando tags...');
-        initTags();
-        
-        // Carrega dados
-        await carregarDadosIniciais();
-        
-        // Inicializa UI
-        inicializarUI();
-        
-        console.log('✅ Sistema iniciado com sucesso!');
-        console.log('📊 Estado inicial:', state);
-    } catch (error) {
-        console.error('❌ Erro ao iniciar sistema:', error);
-        alert('Erro ao iniciar o sistema. Verifique o console para mais detalhes.');
-    }
-});
+window.garantirDataString = garantirDataString;
 
-// Variáveis globais do estado da aplicação
+// ============================================
+// VARIÁVEIS GLOBAIS
+// ============================================
+
 let state = {
     receitas: [],
     despesas: [],
@@ -76,44 +63,104 @@ let state = {
     buscaDespesas: ''
 };
 
-// Conversor de moeda
 const conversor = criarConversorMoeda();
-
-// Elementos DOM (serão preenchidos depois que o DOM carregar)
 let elementos = {};
 
-// Templates
-let templateReceita, templateDespesa;
+// ============================================
+// INICIALIZAÇÃO
+// ============================================
 
-// Função para carregar dados iniciais
+async function verificarApi() {
+    try {
+        const response = await fetch('http://localhost:3000/receitas?_limit=1');
+        if (response.ok) {
+            console.log('✅ API JSON Server está rodando');
+            return true;
+        }
+    } catch (error) {
+        console.warn('⚠️ API não disponível');
+        return false;
+    }
+    return false;
+}
+
 async function carregarDadosIniciais() {
     try {
         console.log('📥 Carregando dados iniciais...');
         
         // Carrega receitas da API
-        state.receitas = await fetchReceitas();
-        console.log('💰 Receitas carregadas:', state.receitas.length);
+        try {
+            state.receitas = await fetchReceitas();
+            console.log('💰 Receitas carregadas:', state.receitas.length);
+        } catch (error) {
+            console.error('Erro ao carregar receitas:', error);
+            state.receitas = [];
+        }
         
-        // Carrega despesas do localStorage
-        state.despesas = carregarDespesas();
-        console.log('💸 Despesas carregadas:', state.despesas.length);
+        // Carrega despesas da API (JSON Server)
+        try {
+            const despesasAPI = await despesaAPIService.listar();
+            console.log('💸 Despesas carregadas da API:', despesasAPI.length);
+            
+            // Converte as despesas da API para objetos da classe Despesa
+            state.despesas = despesasAPI.map(d => {
+                // Busca os IDs das categorias e tags baseado nos nomes
+                let categoriaId = null;
+                for (let [id, cat] of categoriasMap.entries()) {
+                    if (cat.nome === d.categoria) {
+                        categoriaId = id;
+                        break;
+                    }
+                }
+                
+                const tagsIds = d.tags.map(tagNome => {
+                    for (let [id, tag] of tagsMap.entries()) {
+                        if (tag.nome === tagNome) {
+                            return id;
+                        }
+                    }
+                    return null;
+                }).filter(id => id);
+                
+                return new Despesa(
+                    d.titulo,
+                    d.descricao || '',
+                    d.valorPrevisto,
+                    d.valorReal,
+                    categoriaId,
+                    tagsIds,
+                    d.data,
+                    d.status
+                );
+            });
+            
+            // Salva no localStorage como backup
+            if (state.despesas.length > 0) {
+                salvarDespesas(state.despesas);
+            }
+            
+        } catch (error) {
+            console.error('Erro ao carregar despesas da API:', error);
+            // Fallback para localStorage
+            state.despesas = carregarDespesas();
+            console.log('⚠️ Usando despesas do localStorage como fallback');
+        }
         
         console.log('📊 Dados carregados:', {
             receitas: state.receitas.length,
             despesas: state.despesas.length
         });
+        
     } catch (error) {
-        console.error('❌ Erro ao carregar dados:', error);
+        console.error('❌ Erro fatal ao carregar dados:', error);
         state.receitas = [];
-        state.despesas = [];
+        state.despesas = carregarDespesas();
     }
 }
 
-// Função para inicializar UI
 function inicializarUI() {
     console.log('🎨 Inicializando interface...');
     
-    // Busca todos os elementos do DOM
     elementos = {
         listaReceitas: document.querySelector('#listaReceitas'),
         listaDespesas: document.querySelector('#listaDespesas'),
@@ -133,164 +180,35 @@ function inicializarUI() {
         modalContent: document.querySelector('#modalContent')
     };
     
-    // Verifica se os elementos principais foram encontrados
-    console.log('🔍 Elementos encontrados:', {
-        listaReceitas: !!elementos.listaReceitas,
-        listaDespesas: !!elementos.listaDespesas,
-        selectCategoria: !!elementos.selectCategoria,
-        tagsDisponiveis: !!elementos.tagsDisponiveis
-    });
-    
-    // Busca os templates
-    templateReceita = document.querySelector('#templateReceita');
-    templateDespesa = document.querySelector('#templateDespesa');
-    
-    console.log('📋 Templates encontrados:', {
-        templateReceita: !!templateReceita,
-        templateDespesa: !!templateDespesa
-    });
-    
-    // Verifica se elementos essenciais existem
     if (!elementos.listaReceitas || !elementos.listaDespesas) {
-        console.error('❌ Elementos da lista não encontrados!');
+        console.error('❌ Elementos essenciais não encontrados!');
         return;
     }
     
-    // Atualiza selects
     atualizarSelectCategorias();
     atualizarSelectTags();
     renderizarListasCategoriasTags();
-    
-    // Registra event listeners
     registrarEventListeners();
-    
-    // Render inicial
     render();
     
     console.log('✅ Interface inicializada');
 }
 
-// Registra todos os event listeners
-function registrarEventListeners() {
-    console.log('🔌 Registrando event listeners...');
-    
-    // Botões de adição
-    const btnReceita = document.querySelector('#btnAdicionarReceita');
-    const btnDespesa = document.querySelector('#btnAdicionarDespesa');
-    const btnCategoria = document.querySelector('#btnAdicionarCategoria');
-    const btnTag = document.querySelector('#btnAdicionarTag');
-    const btnTagDespesa = document.querySelector('#btnAdicionarTagDespesa');
-    const btnLimparFiltro = document.querySelector('#btnLimparFiltro');
-    
-    // Verifica cada botão e adiciona evento
-    if (btnReceita) {
-        btnReceita.addEventListener('click', adicionarReceita);
-        console.log('✅ Botão receita registrado');
-    } else {
-        console.error('❌ Botão receita não encontrado');
-    }
-    
-    if (btnDespesa) {
-        btnDespesa.addEventListener('click', adicionarDespesa);
-        console.log('✅ Botão despesa registrado');
-    } else {
-        console.error('❌ Botão despesa não encontrado');
-    }
-    
-    if (btnCategoria) {
-        btnCategoria.addEventListener('click', () => {
-            const nome = document.querySelector('#novaCategoria')?.value;
-            if (nome && nome.trim() !== '') {
-                adicionarCategoria(nome.trim());
-                atualizarSelectCategorias();
-                renderizarListasCategoriasTags();
-                document.querySelector('#novaCategoria').value = '';
-            } else {
-                alert('Digite um nome para a categoria!');
-            }
-        });
-        console.log('✅ Botão categoria registrado');
-    }
-    
-    if (btnTag) {
-        btnTag.addEventListener('click', () => {
-            const nome = document.querySelector('#novaTag')?.value;
-            if (nome && nome.trim() !== '') {
-                adicionarTag(nome.trim());
-                atualizarSelectTags();
-                renderizarListasCategoriasTags();
-                document.querySelector('#novaTag').value = '';
-            } else {
-                alert('Digite um nome para a tag!');
-            }
-        });
-        console.log('✅ Botão tag registrado');
-    }
-    
-    // Tags em despesas
-    if (btnTagDespesa) {
-        btnTagDespesa.addEventListener('click', adicionarTagSelecionada);
-        console.log('✅ Botão adicionar tag registrado');
-    }
-    
-    // Filtros
-    if (elementos.mesFiltro) {
-        elementos.mesFiltro.addEventListener('change', (e) => {
-            state.mesFiltro = e.target.value;
-            console.log('📅 Filtro por mês:', state.mesFiltro);
-            render();
-        });
-    }
-    
-    if (btnLimparFiltro) {
-        btnLimparFiltro.addEventListener('click', () => {
-            if (elementos.mesFiltro) {
-                elementos.mesFiltro.value = '';
-            }
-            state.mesFiltro = '';
-            console.log('🔄 Filtro limpo');
-            render();
-        });
-    }
-    
-    // Busca
-    if (elementos.buscaDespesas) {
-        let timeoutId;
-        elementos.buscaDespesas.addEventListener('input', (e) => {
-            clearTimeout(timeoutId);
-            timeoutId = setTimeout(() => {
-                state.buscaDespesas = e.target.value.toLowerCase();
-                console.log('🔍 Busca:', state.buscaDespesas);
-                render();
-            }, 300);
-        });
-    }
-    
-    // Modal
-    const closeBtn = document.querySelector('.close');
-    if (closeBtn) {
-        closeBtn.addEventListener('click', fecharModal);
-    }
-    
-    window.addEventListener('click', (e) => {
-        if (elementos.modal && e.target === elementos.modal) {
-            fecharModal();
-        }
-    });
-}
+// ============================================
+// RENDERIZAÇÃO
+// ============================================
 
-// Função para renderizar a interface
 function render() {
     if (!elementos.listaReceitas || !elementos.listaDespesas) return;
-    
-    console.log('🔄 Renderizando interface...');
     renderReceitas();
     renderDespesas();
     atualizarBalanco();
 }
 
-// Renderiza receitas
+// Renderiza receitas (VERSÃO CORRIGIDA COM CONVERSÃO)
 function renderReceitas() {
+    if (!elementos.listaReceitas) return;
+    
     elementos.listaReceitas.innerHTML = '';
     
     let receitasFiltradas = [...state.receitas];
@@ -302,143 +220,149 @@ function renderReceitas() {
         );
     }
     
-    // Ordena por data
+    // Ordena por data (mais recente primeiro)
     receitasFiltradas.sort((a, b) => {
         if (!a.data) return 1;
         if (!b.data) return -1;
         return new Date(b.data) - new Date(a.data);
     });
     
+    console.log(`📊 Renderizando ${receitasFiltradas.length} receitas`);
+    
     // Renderiza cada receita
-    for (const receita of receitasFiltradas) {
-        if (!templateReceita) continue;
+    receitasFiltradas.forEach(receita => {
+        const div = document.createElement('div');
+        div.className = 'item-card receita-item';
         
-        const clone = templateReceita.content.cloneNode(true);
-        const item = clone.querySelector('.item-card');
+        // Calcula os valores
+        let valorOriginal = receita.valorOriginal || receita.valor || 0;
+        let moeda = receita.moeda || 'BRL';
+        let valorEmReal = receita.valorEmReal || conversor.converterParaReal(valorOriginal, moeda);
         
-        item.querySelector('.item-titulo').textContent = receita.titulo || 'Sem título';
-        item.querySelector('.item-descricao').textContent = receita.descricao || 'Sem descrição';
-        item.querySelector('.item-data').textContent = receita.data ? new Date(receita.data).toLocaleDateString('pt-BR') : 'Sem data';
-        item.querySelector('.item-valor').textContent = conversor.formatarValor(receita.valor || 0, receita.moeda || 'BRL');
+        // Formata os valores
+        const valorOriginalFormatado = conversor.formatarValor(valorOriginal, moeda);
+        const valorRealFormatado = conversor.formatarReal(valorEmReal);
         
-        const btnEdit = item.querySelector('.btn-edit');
-        const btnDelete = item.querySelector('.btn-delete');
+        // Exibe o valor com a moeda original e a conversão
+        const exibicaoValor = moeda === 'BRL' 
+            ? valorRealFormatado 
+            : `${valorOriginalFormatado} ≈ ${valorRealFormatado}`;
         
-        btnEdit.dataset.id = receita.id;
-        btnDelete.dataset.id = receita.id;
+        div.innerHTML = `
+            <div class="item-header">
+                <span class="item-titulo">${receita.titulo || 'Sem título'}</span>
+                <span class="item-valor" style="font-size: 1.1em; font-weight: bold;">
+                    ${exibicaoValor}
+                </span>
+            </div>
+            <div class="item-descricao" style="color: #666; margin: 5px 0;">
+                ${receita.descricao || 'Sem descrição'}
+            </div>
+            ${moeda !== 'BRL' ? `
+                <div class="item-conversao" style="font-size: 0.85em; color: #888; margin: 3px 0;">
+                    💱 Taxa: 1 ${moeda} = R$ ${conversor.getTaxa(moeda).toFixed(2)}
+                </div>
+            ` : ''}
+            <div class="item-data" style="font-size: 0.85em; color: #888;">
+                📅 ${receita.data ? new Date(receita.data).toLocaleDateString('pt-BR') : 'Sem data'}
+            </div>
+            <div class="item-acoes" style="margin-top: 10px;">
+                <button class="btn-edit" data-id="${receita.id}" style="background: #f8961e; color: white; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer;">✏️ Editar</button>
+                <button class="btn-delete" data-id="${receita.id}" style="background: #f72585; color: white; padding: 5px 10px; border: none; border-radius: 5px; cursor: pointer; margin-left: 5px;">🗑️ Remover</button>
+            </div>
+        `;
+        
+        // Adiciona eventos
+        const btnEdit = div.querySelector('.btn-edit');
+        const btnDelete = div.querySelector('.btn-delete');
         
         btnEdit.onclick = () => abrirModalEdicaoReceita(receita.id);
         btnDelete.onclick = () => removerReceita(receita.id);
         
-        elementos.listaReceitas.appendChild(clone);
-    }
+        elementos.listaReceitas.appendChild(div);
+    });
     
-    // Atualiza total
-    const total = receitasFiltradas.reduce((acc, r) => acc + (r.valor || 0), 0);
+    // Atualiza total (sempre em Real)
+    const total = receitasFiltradas.reduce((acc, r) => {
+        const valor = r.valorEmReal || conversor.converterParaReal(r.valorOriginal || r.valor || 0, r.moeda || 'BRL');
+        return acc + valor;
+    }, 0);
+    
     if (elementos.totalReceitas) {
-        elementos.totalReceitas.textContent = conversor.formatarValor(total, 'BRL');
+        elementos.totalReceitas.textContent = conversor.formatarReal(total);
+        // Adiciona tooltip mostrando total em outras moedas
+        elementos.totalReceitas.title = `Total em Real: R$ ${total.toFixed(2)}`;
     }
 }
 
-// Renderiza despesas
 function renderDespesas() {
     elementos.listaDespesas.innerHTML = '';
     
     let despesasFiltradas = [...state.despesas];
     
-    // FILTRA POR MÊS
     if (state.mesFiltro) {
         despesasFiltradas = despesasFiltradas.filter(d => {
             if (!d.data) return false;
-            const dataString = garantirDataString(d.data);
-            return dataString.startsWith(state.mesFiltro);
+            return garantirDataString(d.data).startsWith(state.mesFiltro);
         });
     }
     
-    // Filtra por busca
     if (state.buscaDespesas) {
+        const termo = state.buscaDespesas.toLowerCase();
         despesasFiltradas = despesasFiltradas.filter(d => 
-            (d.titulo && d.titulo.toLowerCase().includes(state.buscaDespesas)) ||
-            (d.descricao && d.descricao.toLowerCase().includes(state.buscaDespesas))
+            (d.titulo && d.titulo.toLowerCase().includes(termo)) ||
+            (d.descricao && d.descricao.toLowerCase().includes(termo))
         );
     }
     
-    // Ordena por data
     despesasFiltradas.sort((a, b) => {
         if (!a.data) return 1;
         if (!b.data) return -1;
-        
         const dataA = new Date(garantirDataString(a.data));
         const dataB = new Date(garantirDataString(b.data));
-        
         return dataB - dataA;
     });
     
-    console.log(`📋 Renderizando ${despesasFiltradas.length} despesas`);
-    
-    // Renderiza cada despesa
     despesasFiltradas.forEach(despesa => {
-        if (!templateDespesa) return;
+        const categoria = categoriasMap.get(despesa.categoria);
+        const nomeCategoria = categoria ? `${categoria.icone} ${categoria.nome}` : 'Sem categoria';
         
-        // VERIFICA SE O MÉTODO EXISTE
-        if (typeof despesa.formatarExibicao !== 'function') {
-            console.error('❌ Despesa sem método formatarExibicao:', despesa);
-            return;
-        }
+        const tagsHtml = (despesa.tags || []).map(tagId => {
+            const tag = tagsMap.get(tagId);
+            return tag ? `<span class="item-tag">${tag.nome}</span>` : '';
+        }).join('');
         
-        const clone = templateDespesa.content.cloneNode(true);
-        const item = clone.querySelector('.item-card');
+        const div = document.createElement('div');
+        div.className = `item-card despesa-item ${despesa.status === 'paga' ? 'paga' : 'pendente'}`;
+        div.innerHTML = `
+            <div class="item-header">
+                <span class="item-titulo">${despesa.titulo || 'Sem título'}</span>
+                <span class="item-valor">R$ ${(despesa.valorPrevisto || 0).toFixed(2)}</span>
+            </div>
+            <div class="item-descricao">${despesa.descricao || 'Sem descrição'}</div>
+            <div class="item-categoria">📁 ${nomeCategoria}</div>
+            <div class="item-tags">${tagsHtml}</div>
+            <div class="item-data">${despesa.data ? new Date(garantirDataString(despesa.data)).toLocaleDateString('pt-BR') : 'Sem data'}</div>
+            <div class="item-status">${despesa.status === 'paga' ? '✅ Paga' : '⏳ Não Paga'}</div>
+            <div class="item-acoes">
+                <button class="btn-edit" data-id="${despesa.id}">✏️ Editar</button>
+                <button class="btn-delete" data-id="${despesa.id}">🗑️ Remover</button>
+            </div>
+        `;
         
-        const formatado = despesa.formatarExibicao(categoriasMap, tagsMap);
+        div.querySelector('.btn-edit').onclick = () => abrirModalEdicaoDespesa(despesa.id);
+        div.querySelector('.btn-delete').onclick = () => removerDespesa(despesa.id);
         
-        // Preenche os dados
-        item.querySelector('.item-titulo').textContent = formatado.titulo;
-        item.querySelector('.item-descricao').textContent = formatado.descricao;
-        item.querySelector('.item-categoria').textContent = formatado.categoria;
-        item.querySelector('.item-data').textContent = formatado.data;
-        item.querySelector('.item-status').textContent = formatado.status;
-        item.querySelector('.item-valor').textContent = formatado.valorPrevisto;
-        
-        // Adiciona tags
-        const tagsContainer = item.querySelector('.item-tags');
-        tagsContainer.innerHTML = ''; // Limpa tags anteriores
-        
-        if (despesa.tags && despesa.tags.length > 0) {
-            despesa.tags.forEach(tagId => {
-                const tag = tagsMap.get(tagId);
-                if (tag) {
-                    const tagSpan = document.createElement('span');
-                    tagSpan.className = 'item-tag';
-                    tagSpan.textContent = tag.nome;
-                    tagsContainer.appendChild(tagSpan);
-                }
-            });
-        }
-        
-        // Configura botões
-        const btnEdit = item.querySelector('.btn-edit');
-        const btnDelete = item.querySelector('.btn-delete');
-        
-        btnEdit.dataset.id = despesa.id;
-        btnDelete.dataset.id = despesa.id;
-        
-        btnEdit.onclick = () => abrirModalEdicaoDespesa(despesa.id);
-        btnDelete.onclick = () => removerDespesa(despesa.id);
-        
-        elementos.listaDespesas.appendChild(clone);
+        elementos.listaDespesas.appendChild(div);
     });
     
-    // Atualiza total
-    const total = despesasFiltradas.reduce((acc, d) => {
-        return acc + (d.getValorBalanco ? d.getValorBalanco() : (d.valorPrevisto || 0));
-    }, 0);
-    
+    const total = despesasFiltradas.reduce((acc, d) => acc + (d.valorPrevisto || 0), 0);
     if (elementos.totalDespesas) {
         elementos.totalDespesas.textContent = `R$ ${total.toFixed(2)}`;
     }
 }
 
-// Atualiza balanço do mês
+// Atualiza balanço do mês (VERSÃO CORRIGIDA COM CONVERSÃO)
 function atualizarBalanco() {
     let receitasMes = [...state.receitas];
     let despesasMes = [...state.despesas];
@@ -455,26 +379,55 @@ function atualizarBalanco() {
         });
     }
     
-    const totalReceitas = receitasMes.reduce((acc, r) => acc + (r.valorConvertido || r.valor || 0), 0);
-    const totalDespesas = despesasMes.reduce((acc, d) => acc + (d.getValorBalanco ? d.getValorBalanco() : (d.valorPrevisto || 0)), 0);
+    // Calcula total de receitas (sempre em Real)
+    const totalReceitas = receitasMes.reduce((acc, r) => {
+        const valor = r.valorEmReal || conversor.converterParaReal(r.valorOriginal || r.valor || 0, r.moeda || 'BRL');
+        return acc + valor;
+    }, 0);
+    
+    // Calcula total de despesas (já estão em Real)
+    const totalDespesas = despesasMes.reduce((acc, d) => {
+        return acc + (d.getValorBalanco ? d.getValorBalanco() : (d.valorPrevisto || 0));
+    }, 0);
+    
     const saldo = totalReceitas - totalDespesas;
     
+    // Atualiza elementos
     if (elementos.totalReceitasMes) {
-        elementos.totalReceitasMes.textContent = `R$ ${totalReceitas.toFixed(2)}`;
+        elementos.totalReceitasMes.textContent = conversor.formatarReal(totalReceitas);
+        // Adiciona informações adicionais
+        if (receitasMes.some(r => r.moeda && r.moeda !== 'BRL')) {
+            elementos.totalReceitasMes.title = `Total convertido para Real`;
+        }
     }
+    
     if (elementos.totalDespesasMes) {
-        elementos.totalDespesasMes.textContent = `R$ ${totalDespesas.toFixed(2)}`;
+        elementos.totalDespesasMes.textContent = conversor.formatarReal(totalDespesas);
     }
+    
     if (elementos.saldoMes) {
-        elementos.saldoMes.textContent = `R$ ${saldo.toFixed(2)}`;
+        elementos.saldoMes.textContent = conversor.formatarReal(saldo);
         elementos.saldoMes.style.color = saldo >= 0 ? '#4cc9f0' : '#f72585';
+        
+        // Adiciona mensagem de alerta se saldo for negativo
+        if (saldo < 0) {
+            elementos.saldoMes.title = `⚠️ Saldo negativo! Despesas excedem receitas em R$ ${Math.abs(saldo).toFixed(2)}`;
+        } else {
+            elementos.saldoMes.title = `✅ Saldo positivo!`;
+        }
     }
+    
+    console.log(`📊 Balanço do mês ${state.mesFiltro || 'atual'}:`);
+    console.log(`   Receitas: R$ ${totalReceitas.toFixed(2)}`);
+    console.log(`   Despesas: R$ ${totalDespesas.toFixed(2)}`);
+    console.log(`   Saldo: R$ ${saldo.toFixed(2)}`);
 }
 
-// Adicionar receita
+// ============================================
+// CRUD RECEITAS (API)
+// ============================================
+
 async function adicionarReceita() {
-    console.log('📝 Tentando adicionar receita...');
-    
     try {
         const titulo = document.querySelector('#tituloReceita')?.value;
         const descricao = document.querySelector('#descricaoReceita')?.value;
@@ -482,62 +435,67 @@ async function adicionarReceita() {
         const moeda = document.querySelector('#moedaReceita')?.value;
         const data = document.querySelector('#dataReceita')?.value;
         
-        console.log('📦 Dados da receita:', { titulo, descricao, valor, moeda, data });
-        
-        if (!titulo || titulo.trim() === '') {
+        if (!titulo?.trim()) {
             alert('Preencha o título da receita!');
             return;
         }
         
-        if (!valor || valor <= 0) {
-            alert('Preencha o valor da receita!');
+        if (!valor || parseFloat(valor) <= 0) {
+            alert('Preencha um valor válido!');
             return;
         }
         
         if (!data) {
-            alert('Preencha a data da receita!');
+            alert('Preencha a data!');
             return;
         }
         
         const novaReceita = {
             titulo: titulo.trim(),
             descricao: descricao || '',
-            valor: Number(valor),
+            valor: parseFloat(valor),
             moeda: moeda || 'BRL',
             data
         };
         
-        // Salva na API
         const receitaSalva = await addReceitaAPI(novaReceita);
-        console.log('✅ Receita salva na API:', receitaSalva);
-        
-        // Atualiza estado
         state.receitas = [...state.receitas, receitaSalva];
         
-        // Limpa formulário
         document.querySelector('#tituloReceita').value = '';
         document.querySelector('#descricaoReceita').value = '';
         document.querySelector('#valorReceita').value = '';
         document.querySelector('#dataReceita').value = '';
         
         render();
-        
-        console.log('✅ Receita adicionada com sucesso!');
+        alert('✅ Receita adicionada!');
         
     } catch (error) {
-        console.error('❌ Erro ao adicionar receita:', error);
-        alert(`Erro ao adicionar receita: ${error.message}`);
+        console.error('Erro:', error);
+        alert(`Erro: ${error.message}`);
     }
 }
 
-// Adicionar despesa
-// Adicionar despesa (VERSÃO CORRIGIDA)
-function adicionarDespesa() {
-    console.log('📝 Tentando adicionar despesa...');
-    console.log('📁 Estado atual das categorias:', Array.from(categoriasMap.entries()));
+async function removerReceita(id) {
+    if (!confirm('Remover esta receita?')) return;
     
     try {
-        // Pega os valores do formulário
+        await deleteReceitaAPI(id);
+        state.receitas = state.receitas.filter(r => r.id !== id);
+        render();
+    } catch (error) {
+        console.error('Erro:', error);
+        alert('Erro ao remover');
+    }
+}
+
+// ============================================
+// CRUD DESPESAS (API)
+// ============================================
+
+async function adicionarDespesa() {
+    console.log('📝 Tentando adicionar despesa...');
+    
+    try {
         const titulo = document.querySelector('#tituloDespesa')?.value;
         const descricao = document.querySelector('#descricaoDespesa')?.value;
         const valorPrevisto = document.querySelector('#valorPrevistoDespesa')?.value;
@@ -546,27 +504,11 @@ function adicionarDespesa() {
         const data = document.querySelector('#dataDespesa')?.value;
         const status = document.querySelector('#statusDespesa')?.value;
         
-        console.log('📦 Dados do formulário:', {
-            titulo, 
-            descricao, 
-            valorPrevisto, 
-            valorReal, 
-            categoriaId, 
-            data, 
-            status
-        });
-        
-        // Pega tags selecionadas
         const tagElements = document.querySelectorAll('#tagsSelecionadas .tag-item[data-id]');
-        const tagsSelecionadas = Array.from(tagElements).map(el => {
-            return el.dataset.id;
-        });
+        const tagsSelecionadas = Array.from(tagElements).map(el => el.dataset.id);
         
-        console.log('🏷️ Tags selecionadas:', tagsSelecionadas);
-        
-        // VALIDAÇÕES
-        if (!titulo || titulo.trim() === '') {
-            alert('Preencha o título da despesa!');
+        if (!titulo?.trim()) {
+            alert('Preencha o título!');
             return;
         }
         
@@ -575,73 +517,66 @@ function adicionarDespesa() {
             return;
         }
         
-        if (!categoriaId || categoriaId === '') {
+        if (!categoriaId) {
             alert('Selecione uma categoria!');
-            console.log('⚠️ Nenhuma categoria selecionada');
             return;
         }
         
         if (!data) {
-            alert('Preencha a data da despesa!');
+            alert('Preencha a data!');
             return;
         }
         
-        // VERIFICAÇÃO CRÍTICA DA CATEGORIA
-        console.log('🔍 Verificando categoria ID:', categoriaId);
-        console.log('📁 Tipo do ID:', typeof categoriaId);
-        
-        // Tenta encontrar a categoria no Map
+        // Verifica categoria
         let categoriaObj = categoriasMap.get(categoriaId);
-        
-        // Se não encontrou, tenta converter para número (caso o ID seja número)
         if (!categoriaObj && !isNaN(categoriaId)) {
-            const numId = Number(categoriaId);
-            categoriaObj = categoriasMap.get(numId);
-            console.log('🔄 Tentando com ID numérico:', numId);
+            categoriaObj = categoriasMap.get(Number(categoriaId));
         }
         
-        // Se ainda não encontrou, lista todas as categorias disponíveis
         if (!categoriaObj) {
-            console.error('❌ Categoria NÃO encontrada no Map!');
-            console.log('📁 Categorias disponíveis:', Array.from(categoriasMap.entries()));
-            
-            // Tenta recarregar as categorias
-            console.log('🔄 Tentando recarregar categorias...');
-            const { recarregarCategorias } = require('./modules/categorias.js');
-            const categoriasRecarregadas = recarregarCategorias();
-            console.log('📁 Categorias após recarregar:', categoriasRecarregadas);
-            
-            // Tenta buscar novamente
-            categoriaObj = categoriasMap.get(categoriaId);
-            
-            if (!categoriaObj) {
-                alert('Categoria inválida! Por favor, recarregue a página e tente novamente.');
-                return;
-            }
+            alert('Categoria inválida!');
+            return;
         }
         
-        console.log('✅ Categoria válida encontrada:', categoriaObj);
+        // Busca os nomes das tags
+        const tagsNomes = tagsSelecionadas.map(tagId => {
+            const tag = tagsMap.get(tagId);
+            return tag ? tag.nome : null;
+        }).filter(nome => nome);
         
-        // Cria nova despesa
+        // Prepara dados para API
+        const despesaData = {
+            titulo: titulo.trim(),
+            descricao: descricao || '',
+            valorPrevisto: parseFloat(valorPrevisto),
+            valorReal: valorReal ? parseFloat(valorReal) : null,
+            categoria: categoriaObj.nome,
+            tags: tagsNomes,
+            data: data,
+            status: status || 'nao_paga'
+        };
+        
+        // Salva na API
+        const novaDespesaAPI = await despesaAPIService.adicionar(despesaData);
+        console.log('✅ Despesa salva na API:', novaDespesaAPI);
+        
+        // Cria instância da classe Despesa para o estado
         const novaDespesa = new Despesa(
-            titulo.trim(), 
-            descricao || '', 
-            parseFloat(valorPrevisto), 
-            valorReal ? parseFloat(valorReal) : null, 
-            categoriaId, // Passa o ID da categoria
-            tagsSelecionadas, 
-            data, 
+            titulo.trim(),
+            descricao || '',
+            parseFloat(valorPrevisto),
+            valorReal ? parseFloat(valorReal) : null,
+            categoriaId,
+            tagsSelecionadas,
+            data,
             status || 'nao_paga'
         );
-        
-        console.log('💰 Nova despesa criada:', novaDespesa);
         
         // Atualiza estado
         state.despesas = [...state.despesas, novaDespesa];
         
-        // Salva no localStorage
+        // Salva no localStorage como backup
         salvarDespesas(state.despesas);
-        console.log('💾 Despesas salvas no localStorage. Total:', state.despesas.length);
         
         // Limpa formulário
         document.querySelector('#tituloDespesa').value = '';
@@ -651,101 +586,291 @@ function adicionarDespesa() {
         document.querySelector('#dataDespesa').value = '';
         document.querySelector('#tagsSelecionadas').innerHTML = '';
         document.querySelector('#categoriaDespesa').value = '';
-        document.querySelector('#statusDespesa').value = 'nao_paga';
         
-        // Renderiza novamente
         render();
-        
-        console.log('✅ Despesa adicionada com sucesso!');
+        alert('✅ Despesa adicionada com sucesso!');
         
     } catch (error) {
         console.error('❌ Erro ao adicionar despesa:', error);
-        alert(`Erro ao adicionar despesa: ${error.message}`);
+        alert(`Erro: ${error.message}`);
     }
 }
 
-// Função para adicionar tag selecionada à despesa
-function adicionarTagSelecionada() {
-    console.log('🏷️ Tentando adicionar tag à despesa...');
+// Função para remover despesa (CORRIGIDA)
+async function removerDespesa(id) {
+    if (!confirm('Deseja realmente remover esta despesa?')) return;
     
-    const select = elementos.tagsDisponiveis;
-    if (!select) {
-        console.error('❌ Select de tags não encontrado');
-        alert('Erro: select de tags não encontrado');
-        return;
+    try {
+        console.log(`🗑️ Tentando remover despesa com ID: ${id} (tipo: ${typeof id})`);
+        
+        // Verifica se a despesa existe no estado
+        const despesaExistente = state.despesas.find(d => d.id === id);
+        if (!despesaExistente) {
+            console.error('❌ Despesa não encontrada no estado local');
+            alert('Despesa não encontrada!');
+            return;
+        }
+        
+        // Tenta remover da API
+        try {
+            await despesaAPIService.remover(id);
+            console.log(`✅ Despesa ${id} removida da API com sucesso`);
+        } catch (apiError) {
+            console.warn('⚠️ Erro ao remover da API, tentando remover apenas localmente:', apiError);
+            // Continua mesmo se falhar na API - remove localmente
+        }
+        
+        // Remove do estado local
+        state.despesas = state.despesas.filter(d => d.id !== id);
+        
+        // Atualiza o localStorage como backup
+        salvarDespesas(state.despesas);
+        
+        // Re-renderiza a interface
+        render();
+        
+        alert('✅ Despesa removida com sucesso!');
+        
+    } catch (error) {
+        console.error('❌ Erro ao remover despesa:', error);
+        
+        // Fallback: tenta remover apenas do localStorage se a API falhou
+        try {
+            console.log('🔄 Tentando remover apenas do localStorage...');
+            state.despesas = state.despesas.filter(d => d.id !== id);
+            salvarDespesas(state.despesas);
+            render();
+            alert('✅ Despesa removida localmente (API não respondeu)');
+        } catch (fallbackError) {
+            console.error('❌ Erro também no fallback:', fallbackError);
+            alert('Erro ao remover despesa. Tente recarregar a página.');
+        }
     }
+}
+
+// ============================================
+// MODAL E EDIÇÃO
+// ============================================
+
+function abrirModalEdicaoReceita(id) {
+    const receita = state.receitas.find(r => r.id === id);
+    if (!receita) return;
+    
+    const modal = document.getElementById('modalEdicao');
+    const modalContent = document.getElementById('modalContent');
+    if (!modal || !modalContent) return;
+    
+    modalContent.innerHTML = `
+        <h2>✏️ Editar Receita</h2>
+        <div class="form-group">
+            <label>Título</label>
+            <input type="text" id="editTitulo" value="${receita.titulo || ''}" placeholder="Título">
+        </div>
+        <div class="form-group">
+            <label>Descrição</label>
+            <textarea id="editDescricao" placeholder="Descrição">${receita.descricao || ''}</textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Valor</label>
+                <input type="number" id="editValor" value="${receita.valor || 0}" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Moeda</label>
+                <select id="editMoeda">
+                    <option value="BRL" ${receita.moeda === 'BRL' ? 'selected' : ''}>R$ Real</option>
+                    <option value="USD" ${receita.moeda === 'USD' ? 'selected' : ''}>US$ Dólar</option>
+                    <option value="EUR" ${receita.moeda === 'EUR' ? 'selected' : ''}>€ Euro</option>
+                </select>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Data</label>
+            <input type="date" id="editData" value="${receita.data || ''}">
+        </div>
+        <div class="modal-buttons">
+            <button id="btnSalvarEdicao" class="btn-primary">💾 Salvar</button>
+            <button id="btnFecharModal" class="btn-secondary">❌ Cancelar</button>
+        </div>
+    `;
+    
+    modal.style.display = 'block';
+    
+    document.getElementById('btnSalvarEdicao').onclick = async () => {
+        const updates = {
+            titulo: document.getElementById('editTitulo').value,
+            descricao: document.getElementById('editDescricao').value,
+            valor: parseFloat(document.getElementById('editValor').value),
+            moeda: document.getElementById('editMoeda').value,
+            data: document.getElementById('editData').value
+        };
+        
+        await patchReceitaAPI(id, updates);
+        state.receitas = state.receitas.map(r => r.id === id ? { ...r, ...updates } : r);
+        modal.style.display = 'none';
+        render();
+        alert('✅ Receita atualizada!');
+    };
+    
+    document.getElementById('btnFecharModal').onclick = () => {
+        modal.style.display = 'none';
+    };
+}
+
+function abrirModalEdicaoDespesa(id) {
+    const despesa = state.despesas.find(d => d.id === id);
+    if (!despesa) return;
+    
+    const modal = document.getElementById('modalEdicao');
+    const modalContent = document.getElementById('modalContent');
+    if (!modal || !modalContent) return;
+    
+    const categoriasOptions = listarCategorias().map(cat => 
+        `<option value="${cat.id}" ${despesa.categoria === cat.id ? 'selected' : ''}>${cat.icone} ${cat.nome}</option>`
+    ).join('');
+    
+    modalContent.innerHTML = `
+        <h2>✏️ Editar Despesa</h2>
+        <div class="form-group">
+            <label>Título</label>
+            <input type="text" id="editTitulo" value="${despesa.titulo || ''}" placeholder="Título">
+        </div>
+        <div class="form-group">
+            <label>Descrição</label>
+            <textarea id="editDescricao" placeholder="Descrição">${despesa.descricao || ''}</textarea>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label>Valor Previsto</label>
+                <input type="number" id="editValorPrevisto" value="${despesa.valorPrevisto || 0}" step="0.01">
+            </div>
+            <div class="form-group">
+                <label>Valor Real</label>
+                <input type="number" id="editValorReal" value="${despesa.valorReal || ''}" step="0.01">
+            </div>
+        </div>
+        <div class="form-group">
+            <label>Categoria</label>
+            <select id="editCategoria">
+                <option value="">Selecione uma categoria</option>
+                ${categoriasOptions}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Data</label>
+            <input type="date" id="editData" value="${despesa.data || ''}">
+        </div>
+        <div class="form-group">
+            <label>Status</label>
+            <select id="editStatus">
+                <option value="nao_paga" ${despesa.status === 'nao_paga' ? 'selected' : ''}>⏳ Não Paga</option>
+                <option value="paga" ${despesa.status === 'paga' ? 'selected' : ''}>✅ Paga</option>
+            </select>
+        </div>
+        <div class="modal-buttons">
+            <button id="btnSalvarEdicao" class="btn-primary">💾 Salvar</button>
+            <button id="btnFecharModal" class="btn-secondary">❌ Cancelar</button>
+        </div>
+    `;
+    
+    modal.style.display = 'block';
+    
+    document.getElementById('btnSalvarEdicao').onclick = async () => {
+        const categoriaId = document.getElementById('editCategoria').value;
+        const categoriaObj = categoriasMap.get(categoriaId);
+        
+        if (!categoriaObj) {
+            alert('Selecione uma categoria válida!');
+            return;
+        }
+        
+        const updatesAPI = {
+            titulo: document.getElementById('editTitulo').value,
+            descricao: document.getElementById('editDescricao').value,
+            valorPrevisto: parseFloat(document.getElementById('editValorPrevisto').value),
+            valorReal: document.getElementById('editValorReal').value ? parseFloat(document.getElementById('editValorReal').value) : null,
+            categoria: categoriaObj.nome,
+            data: document.getElementById('editData').value,
+            status: document.getElementById('editStatus').value
+        };
+        
+        await despesaAPIService.atualizar(id, updatesAPI);
+        
+        state.despesas = state.despesas.map(d => 
+            d.id === id ? {
+                ...d,
+                titulo: updatesAPI.titulo,
+                descricao: updatesAPI.descricao,
+                valorPrevisto: updatesAPI.valorPrevisto,
+                valorReal: updatesAPI.valorReal,
+                categoria: categoriaId,
+                data: updatesAPI.data,
+                status: updatesAPI.status
+            } : d
+        );
+        
+        salvarDespesas(state.despesas);
+        modal.style.display = 'none';
+        render();
+        alert('✅ Despesa atualizada!');
+    };
+    
+    document.getElementById('btnFecharModal').onclick = () => {
+        modal.style.display = 'none';
+    };
+}
+
+// ============================================
+// TAGS E CATEGORIAS
+// ============================================
+
+function adicionarTagSelecionada() {
+    const select = document.getElementById('tagsDisponiveis');
+    if (!select) return;
     
     const tagId = select.value;
-    console.log('🏷️ Tag selecionada ID:', tagId);
-    
-    if (!tagId || tagId === '') {
-        alert('Selecione uma tag primeiro!');
+    if (!tagId) {
+        alert('Selecione uma tag!');
         return;
     }
     
     const tag = tagsMap.get(tagId);
-    console.log('🏷️ Tag encontrada no Map:', tag);
+    if (!tag) return;
     
-    if (!tag) {
-        console.error('❌ Tag não encontrada no Map:', tagId);
-        console.log('🏷️ Tags disponíveis:', Array.from(tagsMap.entries()));
-        alert('Tag não encontrada! Tente recarregar a página.');
-        return;
-    }
-    
-    // Verifica se já foi adicionada
-    const tagExistente = document.querySelector(`#tagsSelecionadas .tag-item[data-id="${tagId}"]`);
-    if (tagExistente) {
+    const existente = document.querySelector(`#tagsSelecionadas .tag-item[data-id="${tagId}"]`);
+    if (existente) {
         alert('Tag já adicionada!');
         return;
     }
     
-    // Cria o elemento da tag
     const tagElement = document.createElement('span');
     tagElement.className = 'tag-item';
     tagElement.dataset.id = tagId;
-    tagElement.innerHTML = `
-        ${tag.nome}
-        <button type="button" onclick="this.parentElement.remove()">×</button>
-    `;
+    tagElement.innerHTML = `${tag.nome} <button onclick="this.parentElement.remove()">×</button>`;
     
-    // Adiciona ao container
-    elementos.tagsSelecionadas.appendChild(tagElement);
-    console.log('✅ Tag adicionada ao container:', tag.nome);
-    
-    // Limpa a seleção
+    document.getElementById('tagsSelecionadas').appendChild(tagElement);
     select.value = '';
 }
 
-// Atualiza select de categorias
 function atualizarSelectCategorias() {
-    const select = elementos.selectCategoria;
+    const select = document.getElementById('categoriaDespesa');
     if (!select) return;
     
     select.innerHTML = '<option value="">Selecione uma categoria</option>';
-    
-    const categorias = listarCategorias();
-    console.log('📁 Atualizando select com categorias:', categorias);
-    
-    categorias.forEach(categoria => {
+    listarCategorias().forEach(cat => {
         const option = document.createElement('option');
-        option.value = categoria.id;
-        option.textContent = `${categoria.icone} ${categoria.nome}`;
+        option.value = cat.id;
+        option.textContent = `${cat.icone} ${cat.nome}`;
         select.appendChild(option);
     });
 }
 
-// Atualiza select de tags
 function atualizarSelectTags() {
-    const select = elementos.tagsDisponiveis;
+    const select = document.getElementById('tagsDisponiveis');
     if (!select) return;
     
     select.innerHTML = '';
-    
-    const tags = listarTags();
-    console.log('🏷️ Atualizando select com tags:', tags);
-    
-    tags.forEach(tag => {
+    listarTags().forEach(tag => {
         const option = document.createElement('option');
         option.value = tag.id;
         option.textContent = tag.nome;
@@ -753,38 +878,211 @@ function atualizarSelectTags() {
     });
 }
 
-// Renderiza listas de categorias e tags
+// Função para renderizar listas de categorias e tags (CORRIGIDA)
+// Função para renderizar listas de categorias e tags (VERSÃO CORRIGIDA PARA CATEGORIAS)
 function renderizarListasCategoriasTags() {
-    // Categorias
+    console.log('🎨 Renderizando listas de categorias e tags...');
+    
+    // Renderizar Categorias (VERSÃO CORRIGIDA)
     if (elementos.listaCategorias) {
         elementos.listaCategorias.innerHTML = '';
-        listarCategorias().forEach(categoria => {
+        const categorias = listarCategorias();
+        console.log(`📁 Renderizando ${categorias.length} categorias`);
+        
+        if (categorias.length === 0) {
             const li = document.createElement('li');
-            li.innerHTML = `
-                ${categoria.icone} ${categoria.nome}
-                <button onclick="removerCategoriaHandler('${categoria.id}')">×</button>
-            `;
+            li.textContent = 'Nenhuma categoria cadastrada';
+            li.style.color = '#999';
+            li.style.fontStyle = 'italic';
+            elementos.listaCategorias.appendChild(li);
+        }
+        
+        categorias.forEach(categoria => {
+            const li = document.createElement('li');
+            li.style.display = 'flex';
+            li.style.justifyContent = 'space-between';
+            li.style.alignItems = 'center';
+            li.style.padding = '5px 10px';
+            li.style.backgroundColor = '#f8f9fa';
+            li.style.borderRadius = '20px';
+            li.style.margin = '5px';
+            
+            // Nome da categoria
+            const spanNome = document.createElement('span');
+            spanNome.textContent = `${categoria.icone} ${categoria.nome}`;
+            
+            // Botão remover
+            const btnRemover = document.createElement('button');
+            btnRemover.textContent = '×';
+            btnRemover.style.background = 'none';
+            btnRemover.style.border = 'none';
+            btnRemover.style.color = '#f72585';
+            btnRemover.style.fontSize = '1.2em';
+            btnRemover.style.cursor = 'pointer';
+            btnRemover.style.padding = '0 5px';
+            btnRemover.style.fontWeight = 'bold';
+            
+            // Adiciona evento diretamente
+            btnRemover.onclick = (e) => {
+                e.stopPropagation();
+                const id = categoria.id;
+                const nome = categoria.nome;
+                const icone = categoria.icone;
+                
+                console.log(`🔘 Botão remover clicado para categoria: ${icone} ${nome} (ID: ${id})`);
+                
+                // Confirmação
+                if (confirm(`Remover a categoria "${icone} ${nome}"?\n\nEsta ação não pode ser desfeita.`)) {
+                    try {
+                        // Verifica se a categoria está sendo usada em alguma despesa
+                        const emUso = state.despesas.some(despesa => {
+                            const categoriaDespesa = despesa.categoria;
+                            return String(categoriaDespesa) === String(id);
+                        });
+                        
+                        if (emUso) {
+                            const despesasComCategoria = state.despesas.filter(d => String(d.categoria) === String(id));
+                            alert(`⚠️ A categoria "${icone} ${nome}" está sendo usada em ${despesasComCategoria.length} despesa(s)!\n\nRemova ou altere a categoria das despesas primeiro ou confirme para remover mesmo assim.`);
+                            
+                            if (!confirm(`Deseja remover a categoria "${icone} ${nome}" mesmo assim? As despesas que a usam ficarão sem categoria.`)) {
+                                return;
+                            }
+                        }
+                        
+                        // Remove a categoria
+                        removerCategoria(id);
+                        
+                        // Atualiza selects
+                        atualizarSelectCategorias();
+                        
+                        // Re-renderiza a lista
+                        renderizarListasCategoriasTags();
+                        
+                        // Se a categoria estava em uso, atualiza as despesas para remover a referência
+                        if (emUso) {
+                            state.despesas = state.despesas.map(despesa => {
+                                if (String(despesa.categoria) === String(id)) {
+                                    console.log(`🔄 Removendo categoria da despesa: ${despesa.titulo}`);
+                                    return {
+                                        ...despesa,
+                                        categoria: null
+                                    };
+                                }
+                                return despesa;
+                            });
+                            // Salva as despesas atualizadas
+                            salvarDespesas(state.despesas);
+                            render(); // Re-renderiza as despesas
+                        }
+                        
+                        alert(`✅ Categoria "${icone} ${nome}" removida com sucesso!`);
+                        
+                    } catch (error) {
+                        console.error('❌ Erro ao remover categoria:', error);
+                        alert(`Erro ao remover categoria: ${error.message}`);
+                    }
+                }
+            };
+            
+            li.appendChild(spanNome);
+            li.appendChild(btnRemover);
             elementos.listaCategorias.appendChild(li);
         });
     }
     
-    // Tags
+    // Renderizar Tags (mantém o código que já funciona)
     if (elementos.listaTags) {
         elementos.listaTags.innerHTML = '';
-        listarTags().forEach(tag => {
+        const tags = listarTags();
+        console.log(`🏷️ Renderizando ${tags.length} tags`);
+        
+        if (tags.length === 0) {
             const li = document.createElement('li');
-            li.innerHTML = `
-                #${tag.nome}
-                <button onclick="removerTagHandler('${tag.id}')">×</button>
-            `;
+            li.textContent = 'Nenhuma tag cadastrada';
+            li.style.color = '#999';
+            li.style.fontStyle = 'italic';
+            elementos.listaTags.appendChild(li);
+        }
+        
+        tags.forEach(tag => {
+            const li = document.createElement('li');
+            li.style.display = 'flex';
+            li.style.justifyContent = 'space-between';
+            li.style.alignItems = 'center';
+            li.style.padding = '5px 10px';
+            li.style.backgroundColor = '#f8f9fa';
+            li.style.borderRadius = '20px';
+            li.style.margin = '5px';
+            
+            const spanNome = document.createElement('span');
+            spanNome.textContent = `#${tag.nome}`;
+            
+            const btnRemover = document.createElement('button');
+            btnRemover.textContent = '×';
+            btnRemover.style.background = 'none';
+            btnRemover.style.border = 'none';
+            btnRemover.style.color = '#f72585';
+            btnRemover.style.fontSize = '1.2em';
+            btnRemover.style.cursor = 'pointer';
+            btnRemover.style.padding = '0 5px';
+            btnRemover.style.fontWeight = 'bold';
+            
+            btnRemover.onclick = (e) => {
+                e.stopPropagation();
+                const id = tag.id;
+                const nome = tag.nome;
+                
+                console.log(`🔘 Botão remover clicado para tag: ${nome} (ID: ${id})`);
+                
+                if (confirm(`Remover a tag "#${nome}"?`)) {
+                    try {
+                        const tagEmUso = state.despesas.some(despesa => 
+                            despesa.tags && despesa.tags.some(tagId => String(tagId) === String(id))
+                        );
+                        
+                        if (tagEmUso) {
+                            alert(`⚠️ A tag "#${nome}" está sendo usada em uma ou mais despesas!`);
+                            if (!confirm(`Deseja remover a tag "#${nome}" mesmo assim?`)) {
+                                return;
+                            }
+                        }
+                        
+                        removerTag(id);
+                        atualizarSelectTags();
+                        renderizarListasCategoriasTags();
+                        
+                        if (tagEmUso) {
+                            state.despesas = state.despesas.map(despesa => {
+                                if (despesa.tags && despesa.tags.some(tagId => String(tagId) === String(id))) {
+                                    return {
+                                        ...despesa,
+                                        tags: despesa.tags.filter(tagId => String(tagId) !== String(id))
+                                    };
+                                }
+                                return despesa;
+                            });
+                            salvarDespesas(state.despesas);
+                            render();
+                        }
+                        
+                        alert(`✅ Tag "#${nome}" removida com sucesso!`);
+                        
+                    } catch (error) {
+                        console.error('❌ Erro ao remover tag:', error);
+                        alert(`Erro ao remover tag: ${error.message}`);
+                    }
+                }
+            };
+            
+            li.appendChild(spanNome);
+            li.appendChild(btnRemover);
             elementos.listaTags.appendChild(li);
         });
     }
 }
 
-// Handlers para remoção
 window.removerCategoriaHandler = (id) => {
-    if (confirm('Remover esta categoria?')) {
+    if (confirm('Remover categoria?')) {
         removerCategoria(id);
         atualizarSelectCategorias();
         renderizarListasCategoriasTags();
@@ -792,192 +1090,152 @@ window.removerCategoriaHandler = (id) => {
 };
 
 window.removerTagHandler = (id) => {
-    if (confirm('Remover esta tag?')) {
+    if (confirm('Remover tag?')) {
         removerTag(id);
         atualizarSelectTags();
         renderizarListasCategoriasTags();
     }
 };
 
-// Funções de remoção
-async function removerReceita(id) {
-    if (!confirm('Deseja realmente remover esta receita?')) return;
-    
-    try {
-        await deleteReceitaAPI(id);
-        state.receitas = state.receitas.filter(r => r.id !== id);
-        render();
-    } catch (error) {
-        console.error('❌ Erro ao remover receita:', error);
-        alert('Erro ao remover receita. Tente novamente.');
-    }
-}
+// ============================================
+// EVENT LISTENERS
+// ============================================
 
-function removerDespesa(id) {
-    if (!confirm('Deseja realmente remover esta despesa?')) return;
+function registrarEventListeners() {
+    console.log('🔌 Registrando event listeners...');
     
-    state.despesas = state.despesas.filter(d => d.id !== id);
-    salvarDespesas(state.despesas);
-    render();
-}
-
-// Modal de edição
-function abrirModalEdicaoReceita(id) {
-    const receita = state.receitas.find(r => r.id === id);
-    if (!receita || !elementos.modal || !elementos.modalContent) return;
+    const btnReceita = document.getElementById('btnAdicionarReceita');
+    const btnDespesa = document.getElementById('btnAdicionarDespesa');
+    const btnCategoria = document.getElementById('btnAdicionarCategoria');
+    const btnTag = document.getElementById('btnAdicionarTag');
+    const btnTagDespesa = document.getElementById('btnAdicionarTagDespesa');
+    const btnLimparFiltro = document.getElementById('btnLimparFiltro');
+    const mesFiltro = document.getElementById('mesFiltro');
+    const buscaDespesas = document.getElementById('buscaDespesas');
     
-    elementos.modalContent.innerHTML = `
-        <h2>Editar Receita</h2>
-        <input type="text" id="editTitulo" value="${receita.titulo || ''}" placeholder="Título">
-        <textarea id="editDescricao" placeholder="Descrição">${receita.descricao || ''}</textarea>
-        <div class="form-row">
-            <input type="number" id="editValor" value="${receita.valor || 0}" placeholder="Valor">
-            <select id="editMoeda">
-                <option value="BRL" ${receita.moeda === 'BRL' ? 'selected' : ''}>R$ Real</option>
-                <option value="USD" ${receita.moeda === 'USD' ? 'selected' : ''}>US$ Dólar</option>
-                <option value="EUR" ${receita.moeda === 'EUR' ? 'selected' : ''}>€ Euro</option>
-            </select>
-        </div>
-        <input type="date" id="editData" value="${receita.data || ''}">
-        <button onclick="salvarEdicaoReceita('${id}')" class="btn-primary">Salvar</button>
-        <button onclick="fecharModal()" class="btn-secondary">Cancelar</button>
-    `;
+    if (btnReceita) btnReceita.onclick = adicionarReceita;
+    if (btnDespesa) btnDespesa.onclick = adicionarDespesa;
     
-    elementos.modal.style.display = 'block';
-}
-
-function abrirModalEdicaoDespesa(id) {
-    const despesa = state.despesas.find(d => d.id === id);
-    if (!despesa || !elementos.modal || !elementos.modalContent) return;
-    
-    const categoriasOptions = listarCategorias().map(cat => 
-        `<option value="${cat.id}" ${despesa.categoria === cat.id ? 'selected' : ''}>${cat.icone} ${cat.nome}</option>`
-    ).join('');
-    
-    elementos.modalContent.innerHTML = `
-        <h2>Editar Despesa</h2>
-        <input type="text" id="editTitulo" value="${despesa.titulo || ''}" placeholder="Título">
-        <textarea id="editDescricao" placeholder="Descrição">${despesa.descricao || ''}</textarea>
-        <div class="form-row">
-            <input type="number" id="editValorPrevisto" value="${despesa.valorPrevisto || 0}" placeholder="Valor Previsto">
-            <input type="number" id="editValorReal" value="${despesa.valorReal || ''}" placeholder="Valor Real">
-        </div>
-        <select id="editCategoria">
-            <option value="">Selecione uma categoria</option>
-            ${categoriasOptions}
-        </select>
-        <input type="date" id="editData" value="${despesa.data || ''}">
-        <select id="editStatus">
-            <option value="nao_paga" ${despesa.status === 'nao_paga' ? 'selected' : ''}>Não Paga</option>
-            <option value="paga" ${despesa.status === 'paga' ? 'selected' : ''}>Paga</option>
-        </select>
-        <button onclick="salvarEdicaoDespesa('${id}')" class="btn-primary">Salvar</button>
-        <button onclick="fecharModal()" class="btn-secondary">Cancelar</button>
-    `;
-    
-    elementos.modal.style.display = 'block';
-}
-
-async function salvarEdicaoReceita(id) {
-    try {
-        const titulo = document.querySelector('#editTitulo')?.value;
-        const descricao = document.querySelector('#editDescricao')?.value;
-        const valor = document.querySelector('#editValor')?.value;
-        const moeda = document.querySelector('#editMoeda')?.value;
-        const data = document.querySelector('#editData')?.value;
-        
-        const updates = {
-            titulo,
-            descricao,
-            valor: Number(valor),
-            moeda,
-            data
+    if (btnCategoria) {
+        btnCategoria.onclick = () => {
+            const input = document.getElementById('novaCategoria');
+            const nome = input?.value;
+            if (nome?.trim()) {
+                adicionarCategoria(nome.trim());
+                atualizarSelectCategorias();
+                renderizarListasCategoriasTags();
+                input.value = '';
+            } else alert('Digite um nome!');
         };
-        
-        const receitaAtualizada = await patchReceitaAPI(id, updates);
-        
-        state.receitas = state.receitas.map(r => 
-            r.id === id ? { ...r, ...updates } : r
-        );
-        
-        fecharModal();
-        render();
-    } catch (error) {
-        console.error('❌ Erro ao editar receita:', error);
-        alert('Erro ao editar receita. Tente novamente.');
     }
-}
-
-function salvarEdicaoDespesa(id) {
-    const titulo = document.querySelector('#editTitulo')?.value;
-    const descricao = document.querySelector('#editDescricao')?.value;
-    const valorPrevisto = document.querySelector('#editValorPrevisto')?.value;
-    const valorReal = document.querySelector('#editValorReal')?.value;
-    const categoria = document.querySelector('#editCategoria')?.value;
-    const data = document.querySelector('#editData')?.value;
-    const status = document.querySelector('#editStatus')?.value;
     
-    state.despesas = state.despesas.map(d => 
-        d.id === id 
-            ? { 
-                ...d, 
-                titulo, 
-                descricao, 
-                valorPrevisto: Number(valorPrevisto),
-                valorReal: valorReal ? Number(valorReal) : null,
-                categoria, 
-                data, 
-                status 
-              }
-            : d
-    );
+    if (btnTag) {
+        btnTag.onclick = () => {
+            const input = document.getElementById('novaTag');
+            const nome = input?.value;
+            if (nome?.trim()) {
+                adicionarTag(nome.trim());
+                atualizarSelectTags();
+                renderizarListasCategoriasTags();
+                input.value = '';
+            } else alert('Digite um nome!');
+        };
+    }
     
-    salvarDespesas(state.despesas);
-    fecharModal();
-    render();
+    if (btnTagDespesa) btnTagDespesa.onclick = adicionarTagSelecionada;
+    
+    if (mesFiltro) {
+        mesFiltro.onchange = (e) => {
+            state.mesFiltro = e.target.value;
+            render();
+        };
+    }
+    
+    if (btnLimparFiltro) {
+        btnLimparFiltro.onclick = () => {
+            if (mesFiltro) mesFiltro.value = '';
+            state.mesFiltro = '';
+            render();
+        };
+    }
+    
+    if (buscaDespesas) {
+        let timeoutId;
+        buscaDespesas.oninput = (e) => {
+            clearTimeout(timeoutId);
+            timeoutId = setTimeout(() => {
+                state.buscaDespesas = e.target.value;
+                render();
+            }, 300);
+        };
+    }
+    
+    const closeBtn = document.querySelector('.close');
+    if (closeBtn) {
+        closeBtn.onclick = () => {
+            const modal = document.getElementById('modalEdicao');
+            if (modal) modal.style.display = 'none';
+        };
+    }
+    
+    window.onclick = (e) => {
+        const modal = document.getElementById('modalEdicao');
+        if (modal && e.target === modal) modal.style.display = 'none';
+    };
 }
 
-function fecharModal() {
-    if (elementos.modal) {
-        elementos.modal.style.display = 'none';
-    }
-    if (elementos.modalContent) {
-        elementos.modalContent.innerHTML = '';
-    }
-}
+// ============================================
+// FUNÇÕES DE DEBUG
+// ============================================
 
-// FUNÇÕES DE DEBUG (acessíveis pelo console)
 window.debugEstado = function() {
     console.log('🔍 ESTADO ATUAL:');
     console.log('💰 Receitas:', state.receitas.length);
     console.log('💸 Despesas:', state.despesas.length);
     console.log('📁 Categorias Map:', Array.from(categoriasMap.entries()));
     console.log('🏷️ Tags Map:', Array.from(tagsMap.entries()));
-    
-    if (state.despesas.length > 0) {
-        console.log('🎨 Testando formatação da primeira despesa:');
-        const primeira = state.despesas[0];
-        const formatado = primeira.formatarExibicao(categoriasMap, tagsMap);
-        console.log('✅ Formatado:', formatado);
-    }
     return '✅ Debug concluído';
 };
 
 window.limparStorage = function() {
-    if (confirm('Limpar todo o localStorage? Isso apagará todas as despesas, categorias e tags!')) {
+    if (confirm('Limpar todo o localStorage?')) {
         localStorage.clear();
-        console.log('🧹 localStorage limpo');
         location.reload();
     }
 };
 
-// Expõe funções globalmente para os templates
-window.removerReceita = removerReceita;
-window.removerDespesa = removerDespesa;
-window.editarReceita = abrirModalEdicaoReceita;
-window.editarDespesa = abrirModalEdicaoDespesa;
-window.fecharModal = fecharModal;
-window.salvarEdicaoReceita = salvarEdicaoReceita;
-window.salvarEdicaoDespesa = salvarEdicaoDespesa;
+window.sincronizarDespesas = async function() {
+    console.log('🔄 Sincronizando despesas...');
+    const despesas = await despesaAPIService.sincronizarComLocalStorage();
+    state.despesas = despesas;
+    render();
+    alert(`✅ ${despesas.length} despesas sincronizadas!`);
+};
 
-console.log('📝 App.js carregado com sucesso!');
+// ============================================
+// INICIALIZAÇÃO PRINCIPAL
+// ============================================
+
+document.addEventListener('DOMContentLoaded', async function() {
+    console.log('🚀 Iniciando Sistema de Gestão Financeira...');
+    
+    try {
+        await verificarApi();
+        initCategorias();
+        initTags();
+        await carregarDadosIniciais();
+        inicializarUI();
+        
+        // Expõe funções globais
+        window.fecharModal = () => {
+            const modal = document.getElementById('modalEdicao');
+            if (modal) modal.style.display = 'none';
+        };
+        
+        console.log('✅ Sistema iniciado com sucesso!');
+        
+    } catch (error) {
+        console.error('❌ Erro ao iniciar sistema:', error);
+        alert('Erro ao iniciar o sistema. Verifique o console.');
+    }
+});

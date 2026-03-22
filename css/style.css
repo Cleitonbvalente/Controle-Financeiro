@@ -444,4 +444,84 @@ button {
         margin: 20% auto;
         width: 90%;
     }
+    /* Modal buttons */
+    .modal-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 20px;
+    }
+    .modal-buttons button {
+    padding: 10px 20px;
+    }
+
+    /* Form groups dentro do modal */
+    .modal-content .form-group {
+    margin-bottom: 15px;
+    }
+
+    .modal-content .form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: var(--dark-color);
+}
+
+.modal-content input,
+.modal-content textarea,
+.modal-content select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: var(--border-radius);
+    font-size: 14px;
+}
+
+.modal-content input:focus,
+.modal-content textarea:focus,
+.modal-content select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px rgba(67, 97, 238, 0.2);
+}
+
+.modal-content textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+/* Estilos para conversão de moedas */
+.item-conversao {
+    font-size: 0.8em;
+    color: #666;
+    margin-top: 3px;
+    padding: 2px 5px;
+    background: #f0f0f0;
+    border-radius: 4px;
+    display: inline-block;
+}
+
+.item-valor {
+    font-size: 1.1em;
+    font-weight: bold;
+}
+
+.receita-item .item-valor {
+    color: var(--success-color);
+}
+
+/* Tooltip para valores */
+[title] {
+    cursor: help;
+}
+
+/* Animação para conversão */
+@keyframes highlight {
+    0% { background-color: #ffd700; }
+    100% { background-color: transparent; }
+}
+
+.item-conversao {
+    animation: highlight 1s ease-out;
+}
 }
