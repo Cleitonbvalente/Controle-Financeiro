@@ -1,4 +1,3 @@
-// js/app.js - VERSÃO COMPLETA COM DESPESAS DO JSON SERVER
 import { 
     fetchReceitas, 
     addReceitaAPI, 
@@ -61,9 +60,9 @@ let state = {
     receitas: [],
     despesas: [],
     mesFiltro: '',
-    buscaGeral: '',      // Busca unificada
-    buscarReceitas: true, // Flag para buscar receitas
-    buscarDespesas: true  // Flag para buscar despesas
+    buscaGeral: '',     
+    buscarReceitas: true, 
+    buscarDespesas: true 
 };
 
 const conversor = criarConversorMoeda();
@@ -213,8 +212,7 @@ function render() {
     atualizarBalanco();
 }
 
-// Renderiza receitas (VERSÃO CORRIGIDA COM CONVERSÃO)
-// Renderiza receitas (COM BUSCA)
+// Renderiza receitas 
 function renderReceitas() {
     if (!elementos.listaReceitas) return;
     
@@ -277,7 +275,6 @@ function renderReceitas() {
         const valorOriginalFormatado = conversor.formatarValor(valorOriginal, moeda);
         const valorRealFormatado = conversor.formatarReal(valorEmReal);
         
-        // HTML da receita
         let html = `
             <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px;">
                 <div>
@@ -336,7 +333,7 @@ function renderReceitas() {
     }
 }
 
-// Renderiza despesas (COM BUSCA UNIFICADA)
+// Renderiza despesas
 function renderDespesas() {
     if (!elementos.listaDespesas) return;
     
@@ -458,8 +455,8 @@ function renderDespesas() {
     }
 }
 
-// Atualiza balanço do mês (VERSÃO CORRIGIDA COM CONVERSÃO)
-// Atualiza balanço do mês (considera apenas filtro de mês, NÃO considera busca)
+// Atualiza balanço do mês
+// Atualiza balanço do mês
 function atualizarBalanco() {
     console.log('📊 Calculando balanço...');
     
@@ -555,10 +552,10 @@ function atualizarBalanco() {
         
         // Define a cor baseado no saldo
         if (saldo >= 0) {
-            elementos.saldoMes.style.color = '#4cc9f0'; // Verde/azul para positivo
+            elementos.saldoMes.style.color = '#4cc9f0';
             elementos.saldoMes.title = `✅ Saldo positivo! Você está no azul.`;
         } else {
-            elementos.saldoMes.style.color = '#f72585'; // Vermelho para negativo
+            elementos.saldoMes.style.color = '#f72585'; 
             elementos.saldoMes.title = `⚠️ Saldo negativo! Você está no vermelho. Economize R$ ${Math.abs(saldo).toFixed(2)} para equilibrar.`;
         }
         
@@ -756,7 +753,7 @@ async function adicionarDespesa() {
     }
 }
 
-// Função para remover despesa (CORRIGIDA)
+// Função para remover despesa
 async function removerDespesa(id) {
     if (!confirm('Deseja realmente remover esta despesa?')) return;
     

@@ -1,4 +1,3 @@
-// js/modules/tags.js
 import { salvarTags, carregarTags } from '../storage/localStorage.js';
 
 // Classe Tag
@@ -84,7 +83,7 @@ export function adicionarTag(nome) {
     }
 }
 
-// CRUD de Tags - REMOVER (VERSÃO CORRIGIDA)
+// CRUD de Tags - REMOVER
 export function removerTag(id) {
     try {
         console.log(`🗑️ Tentando remover tag com ID: ${id}`);
@@ -208,7 +207,7 @@ export function tagEstaEmUso(tagId) {
     }
 }
 
-// Função para limpar todas as tags (útil para testes)
+// Função para limpar todas as tags
 export function limparTodasTags() {
     try {
         console.log('🧹 Limpando todas as tags...');

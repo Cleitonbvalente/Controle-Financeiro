@@ -1,4 +1,3 @@
-// Classe Despesa
 export class Despesa {
     constructor(titulo, descricao, valorPrevisto, valorReal, categoria, tags, data, status) {
         this.id = Date.now() + Math.random();
@@ -6,8 +5,8 @@ export class Despesa {
         this.descricao = descricao;
         this.valorPrevisto = Number(valorPrevisto);
         this.valorReal = valorReal ? Number(valorReal) : null;
-        this.categoria = categoria; // ID da categoria
-        this.tags = tags || []; // Array de IDs de tags
+        this.categoria = categoria; 
+        this.tags = tags || [];
         this.data = data;
         this.status = status || 'nao_paga';
         
@@ -53,7 +52,7 @@ export class Despesa {
                 console.log(`🏷️ Tag ${tagId}:`, tag);
                 return tag?.nome;
             })
-            .filter(nome => nome) // Remove undefined
+            .filter(nome => nome)
             .join(', ');
         
         console.log('🏷️ Tags nomes:', tagsNomes);

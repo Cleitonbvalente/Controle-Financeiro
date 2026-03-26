@@ -1,16 +1,15 @@
-// js/modules/receitas.js
 import { criarConversorMoeda } from '../utils/conversorMoeda.js';
 
 const conversor = criarConversorMoeda();
 
-// Classe Receita (VERSÃO CORRIGIDA)
+// Classe Receita
 export class Receita {
     constructor(titulo, descricao, valor, moeda, data) {
         this.id = Date.now() + Math.random();
         this.titulo = titulo;
         this.descricao = descricao;
-        this.valorOriginal = Number(valor);  // Valor na moeda original
-        this.moeda = moeda;                  // Moeda original (BRL, USD, EUR)
+        this.valorOriginal = Number(valor); 
+        this.moeda = moeda;
         this.data = data;
         
         // Converte para Real imediatamente

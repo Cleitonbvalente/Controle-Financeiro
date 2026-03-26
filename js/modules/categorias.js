@@ -84,7 +84,7 @@ export function adicionarCategoria(nome, icone = '📁') {
     }
 }
 
-// CRUD de Categorias - REMOVER (VERSÃO CORRIGIDA)
+// CRUD de Categorias - REMOVER
 export function removerCategoria(id) {
     try {
         console.log(`🗑️ Tentando remover categoria com ID: ${id}`);
@@ -228,7 +228,7 @@ export function categoriaEstaEmUso(categoriaId, despesas) {
     }
 }
 
-// Função para limpar todas as categorias (útil para testes)
+// Função para limpar todas as categorias
 export function limparTodasCategorias() {
     try {
         console.log('🧹 Limpando todas as categorias...');

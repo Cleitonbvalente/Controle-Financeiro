@@ -1,4 +1,3 @@
-// js/services/despesaAPIService.js
 const API_URL = 'http://localhost:3000';
 
 /**
@@ -161,13 +160,13 @@ export const despesaAPIService = {
         }
     },
     
-    // Remover despesa da API (VERSÃO CORRIGIDA)
+    // Remover despesa da API
     async remover(id) {
         try {
             console.log(`🗑️ Removendo despesa ${id} da API...`);
             console.log(`🔍 Tipo do ID recebido: ${typeof id}, valor: ${id}`);
             
-            // Converte para número se necessário (importante!)
+            // Converte para número se necessário
             let idNumerico;
             if (typeof id === 'string') {
                 idNumerico = parseInt(id, 10);
@@ -262,7 +261,7 @@ export const despesaAPIService = {
         }
     },
     
-    // Limpar todas as despesas da API (útil para testes)
+    // Limpar todas as despesas da API
     async limparTodas() {
         try {
             console.log('🧹 Buscando todas despesas para limpar...');

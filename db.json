@@ -42,6 +42,24 @@
       "data": "2026-03-21",
       "tempId": "temp_1774138261452",
       "id": 6
+    },
+    {
+      "titulo": "Trabalho casual",
+      "descricao": "Trabalho feito para um lojista",
+      "valor": 100,
+      "moeda": "BRL",
+      "data": "2026-03-24",
+      "tempId": "temp_1774492427317",
+      "id": 7
+    },
+    {
+      "titulo": "Trabalho autonomo",
+      "descricao": "Fazer um aplicativo",
+      "valor": 1000,
+      "moeda": "BRL",
+      "data": "2026-03-24",
+      "tempId": "temp_1774494088769",
+      "id": 8
     }
   ],
   "despesas": [
@@ -171,6 +189,28 @@
       "data": "2026-03-21",
       "status": "paga",
       "id": 10
+    },
+    {
+      "titulo": "Material escolar",
+      "descricao": "Material escolar da faculdade",
+      "valorPrevisto": 50,
+      "valorReal": 50,
+      "categoria": "Educação",
+      "tags": [],
+      "data": "2026-03-24",
+      "status": "paga",
+      "id": 11
+    },
+    {
+      "titulo": "Festa",
+      "descricao": "Sai para uma festa com os amigos",
+      "valorPrevisto": 100,
+      "valorReal": 100,
+      "categoria": "Lazer",
+      "tags": [],
+      "data": "2026-03-24",
+      "status": "paga",
+      "id": 12
     }
   ]
 }
